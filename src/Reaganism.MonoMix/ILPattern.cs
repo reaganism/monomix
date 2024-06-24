@@ -10,11 +10,26 @@ namespace Reaganism.MonoMix;
 ///     instructions.
 /// </summary>
 public abstract class ILPattern {
+    /// <summary>
+    ///     The match direction.
+    /// </summary>
+    public enum Direction {
+        /// <summary>
+        ///     Whether matching is done forward.
+        /// </summary>
+        Forward,
+
+        /// <summary>
+        ///     Whether matching is done backward.
+        /// </summary>
+        Backward,
+    }
+
     private sealed class OptionalILPattern(ILPattern pattern) : ILPattern {
         public override int MinimumLength => 0;
 
-        protected override bool Match(IILProvider ilProvider) {
-            pattern.TryMatch(ilProvider);
+        protected override bool Match(IILProvider ilProvider, Direction direction) {
+            pattern.TryMatch(ilProvider, direction);
             return true;
         }
     }
@@ -22,9 +37,10 @@ public abstract class ILPattern {
     private sealed class SequenceILPattern(IEnumerable<ILPattern> patterns) : ILPattern {
         public override int MinimumLength => patterns.Sum(pattern => pattern.MinimumLength);
 
-        protected override bool Match(IILProvider ilProvider) {
-            foreach (var pattern in patterns) {
-                if (!pattern.Match(ilProvider))
+        protected override bool Match(IILProvider ilProvider, Direction direction) {
+            var thePatterns = direction == Direction.Forward ? patterns : patterns.Reverse();
+            foreach (var pattern in thePatterns) {
+                if (!pattern.Match(ilProvider, direction))
                     return false;
             }
 
@@ -35,20 +51,25 @@ public abstract class ILPattern {
     private sealed class EitherILPattern(ILPattern either, ILPattern or) : ILPattern {
         public override int MinimumLength => Math.Min(either.MinimumLength, or.MinimumLength);
 
-        protected override bool Match(IILProvider ilProvider) {
-            return either.TryMatch(ilProvider) || or.Match(ilProvider);
+        protected override bool Match(IILProvider ilProvider, Direction direction) {
+            return either.TryMatch(ilProvider, direction) || or.Match(ilProvider, direction);
         }
     }
 
     private sealed class OpCodeILPattern(OpCode opCode) : ILPattern {
         public override int MinimumLength => 1;
 
-        protected override bool Match(IILProvider ilProvider) {
+        protected override bool Match(IILProvider ilProvider, Direction direction) {
             if (ilProvider.Instruction is null)
                 return false;
 
             var success = ilProvider.Instruction.OpCode == opCode;
-            ilProvider.TryGotoNext();
+
+            if (direction == Direction.Forward)
+                ilProvider.TryGotoNext();
+            else
+                ilProvider.TryGotoPrev();
+
             return success;
         }
     }
@@ -59,36 +80,38 @@ public abstract class ILPattern {
     ///     Matches an arbitrary condition given a set of instructions.
     /// </summary>
     /// <param name="ilProvider">Provides the set of instructions.</param>
+    /// <param name="direction">The direction to match toward.</param>
     /// <returns>Whether the match was successful.</returns>
     /// <remarks>
     ///     While <see cref="TryMatch"/> also optionally performs a match,
     ///     <see cref="Match"/> on its own will leave the position of the
     ///     <paramref name="ilProvider"/> modified.
     /// </remarks>
-    protected abstract bool Match(IILProvider ilProvider);
+    protected abstract bool Match(IILProvider ilProvider, Direction direction);
 
     /// <summary>
     ///     Attempts to match and resets to the starting position if the match
     ///     fails.
     /// </summary>
     /// <param name="ilProvider">Provides the set of instructions.</param>
+    /// <param name="direction">The direction to match toward.</param>
     /// <returns>Whether the match was successful.</returns>
     /// <remarks>
     ///     While <see cref="Match"/> also communicates whether the match was
     ///     successful, <see cref="TryMatch"/> explicitly resets the position
     ///     of the <paramref name="ilProvider"/> if the match fails.
     /// </remarks>
-    protected bool TryMatch(IILProvider ilProvider) {
+    protected bool TryMatch(IILProvider ilProvider, Direction direction) {
         var instruction = ilProvider.Instruction;
-        if (Match(ilProvider))
+        if (Match(ilProvider, direction))
             return true;
 
         ilProvider.Instruction = instruction;
         return false;
     }
 
-    public static Instruction? Match(IILProvider ilProvider, ILPattern pattern) {
-        return pattern.Match(ilProvider) ? ilProvider.Instruction : null;
+    public static Instruction? Match(IILProvider ilProvider, ILPattern pattern, Direction direction = Direction.Forward) {
+        return pattern.Match(ilProvider, direction) ? ilProvider.Instruction : null;
     }
 
     public static ILPattern Optional(OpCode opCode) {
