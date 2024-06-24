@@ -97,8 +97,13 @@ public interface IILProvider : IEnumerable<Instruction>, IDisposable {
         return FromMethodBody(cursor.Body);
     }
 
-    public static IILProvider FromMethodBase(MethodBase methodBase) {
+    public static IILProvider FromMethodBaseAsCecil(MethodBase methodBase) {
         var dynDef = new DynamicMethodDefinition(methodBase);
         return new ILProvider(dynDef.Definition.Body.Instructions.First(), dynDef.Definition.Body.Instructions, dynDef);
+    }
+
+    public static IILProvider FromMethodBaseAsSystem(MethodBase methodBase) {
+        var instructions = MethodBodyDisassembler.FromMethodBase(methodBase);
+        return new ILProvider(instructions.First(), instructions);
     }
 }

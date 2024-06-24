@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil.Cil;
 
@@ -10,6 +11,8 @@ namespace Reaganism.MonoMix;
 /// </summary>
 public abstract class ILPattern {
     private sealed class OptionalILPattern(ILPattern pattern) : ILPattern {
+        public override int MinimumLength => 0;
+
         protected override bool Match(IILProvider ilProvider) {
             pattern.TryMatch(ilProvider);
             return true;
@@ -17,6 +20,8 @@ public abstract class ILPattern {
     }
 
     private sealed class SequenceILPattern(IEnumerable<ILPattern> patterns) : ILPattern {
+        public override int MinimumLength => patterns.Sum(pattern => pattern.MinimumLength);
+
         protected override bool Match(IILProvider ilProvider) {
             foreach (var pattern in patterns) {
                 if (!pattern.Match(ilProvider))
@@ -28,12 +33,16 @@ public abstract class ILPattern {
     }
 
     private sealed class EitherILPattern(ILPattern either, ILPattern or) : ILPattern {
+        public override int MinimumLength => Math.Min(either.MinimumLength, or.MinimumLength);
+
         protected override bool Match(IILProvider ilProvider) {
             return either.TryMatch(ilProvider) || or.Match(ilProvider);
         }
     }
 
     private sealed class OpCodeILPattern(OpCode opCode) : ILPattern {
+        public override int MinimumLength => 1;
+
         protected override bool Match(IILProvider ilProvider) {
             if (ilProvider.Instruction is null)
                 return false;
@@ -43,6 +52,8 @@ public abstract class ILPattern {
             return success;
         }
     }
+
+    public abstract int MinimumLength { get; }
 
     /// <summary>
     ///     Matches an arbitrary condition given a set of instructions.
