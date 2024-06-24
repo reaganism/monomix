@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Mono.Cecil.Cil;
 
-namespace Reaganism.MonoMix;
+namespace Reaganism.MonoMix.Pattern;
 
 /// <summary>
 ///     An IL pattern, which is an abstract object that may match against IL
@@ -28,7 +28,7 @@ public abstract class ILPattern {
     private sealed class OptionalILPattern(ILPattern pattern) : ILPattern {
         public override int MinimumLength => 0;
 
-        protected override bool Match(IILProvider ilProvider, Direction direction) {
+        public override bool Match(IILProvider ilProvider, Direction direction) {
             pattern.TryMatch(ilProvider, direction);
             return true;
         }
@@ -37,7 +37,7 @@ public abstract class ILPattern {
     private sealed class SequenceILPattern(IEnumerable<ILPattern> patterns) : ILPattern {
         public override int MinimumLength => patterns.Sum(pattern => pattern.MinimumLength);
 
-        protected override bool Match(IILProvider ilProvider, Direction direction) {
+        public override bool Match(IILProvider ilProvider, Direction direction) {
             var thePatterns = direction == Direction.Forward ? patterns : patterns.Reverse();
             foreach (var pattern in thePatterns) {
                 if (!pattern.Match(ilProvider, direction))
@@ -51,7 +51,7 @@ public abstract class ILPattern {
     private sealed class EitherILPattern(ILPattern either, ILPattern or) : ILPattern {
         public override int MinimumLength => Math.Min(either.MinimumLength, or.MinimumLength);
 
-        protected override bool Match(IILProvider ilProvider, Direction direction) {
+        public override bool Match(IILProvider ilProvider, Direction direction) {
             return either.TryMatch(ilProvider, direction) || or.Match(ilProvider, direction);
         }
     }
@@ -59,7 +59,7 @@ public abstract class ILPattern {
     private sealed class OpCodeILPattern(OpCode opCode) : ILPattern {
         public override int MinimumLength => 1;
 
-        protected override bool Match(IILProvider ilProvider, Direction direction) {
+        public override bool Match(IILProvider ilProvider, Direction direction) {
             if (ilProvider.Instruction is null)
                 return false;
 
@@ -87,7 +87,7 @@ public abstract class ILPattern {
     ///     <see cref="Match"/> on its own will leave the position of the
     ///     <paramref name="ilProvider"/> modified.
     /// </remarks>
-    protected abstract bool Match(IILProvider ilProvider, Direction direction);
+    public abstract bool Match(IILProvider ilProvider, Direction direction);
 
     /// <summary>
     ///     Attempts to match and resets to the starting position if the match
@@ -101,7 +101,7 @@ public abstract class ILPattern {
     ///     successful, <see cref="TryMatch"/> explicitly resets the position
     ///     of the <paramref name="ilProvider"/> if the match fails.
     /// </remarks>
-    protected bool TryMatch(IILProvider ilProvider, Direction direction) {
+    public bool TryMatch(IILProvider ilProvider, Direction direction) {
         var instruction = ilProvider.Instruction;
         if (Match(ilProvider, direction))
             return true;

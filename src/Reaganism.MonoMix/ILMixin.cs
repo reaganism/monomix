@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using MonoMod.Cil;
+using Reaganism.MonoMix.Pattern;
 
 namespace Reaganism.MonoMix;
 
