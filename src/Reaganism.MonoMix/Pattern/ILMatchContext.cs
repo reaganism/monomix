@@ -9,6 +9,8 @@ namespace Reaganism.MonoMix.Pattern;
 public sealed class ILMatchContext(Instruction? instruction, IILProvider ilProvider, ILPattern.Direction direction = ILPattern.Direction.Forward) : IDisposable {
     public Instruction? Instruction { get; set; } = instruction ?? ilProvider.First();
 
+    public ILPattern.Direction Direction { get; } = direction;
+
     private readonly Dictionary<object, object> data = [];
 
     public bool TryGetData(object key, [NotNullWhen(returnValue: true)] out object? value) {
@@ -30,15 +32,15 @@ public sealed class ILMatchContext(Instruction? instruction, IILProvider ilProvi
     ///     <see langword="false"/> if the operation failed.
     /// </returns>
     public bool TryAdvance() {
-        if (Instruction is null && direction == ILPattern.Direction.Forward)
+        if (Instruction is null && Direction == ILPattern.Direction.Forward)
             return false;
 
         // TODO: We can't go backward once we've reached the forward-end.
         // ^ Does it matter? (probably not)
-        if (Instruction?.Previous is null && direction == ILPattern.Direction.Backward)
+        if (Instruction?.Previous is null && Direction == ILPattern.Direction.Backward)
             return false;
 
-        Instruction = direction == ILPattern.Direction.Forward ? Instruction?.Next : Instruction?.Previous;
+        Instruction = Direction == ILPattern.Direction.Forward ? Instruction?.Next : Instruction?.Previous;
         return true;
     }
 

@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 using Mono.Cecil.Cil;
 using Reaganism.MonoMix.Pattern;
 
@@ -9,16 +10,22 @@ namespace Reaganism.MonoMix.Reflection;
 /// </summary>
 public static class BackingFieldResolver {
     private sealed class FieldILPattern(ILPattern pattern) : ILPattern {
+        public static readonly object FIELD_KEY = new();
+
         public override int MinimumLength => 1;
 
-        public FieldInfo? Field { get; private set; }
-
-        public override bool Match(IILProvider ilProvider, Direction direction) {
-            if (!pattern.Match(ilProvider, direction))
+        public override bool Match(ILMatchContext ctx) {
+            if (!pattern.Match(ctx))
                 return false;
 
-            var match = ilProvider.Instruction?.Previous;
-            Field = match?.Operand as FieldInfo;
+            var match = ctx.Instruction?.Previous;
+            if (match?.Operand is not FieldInfo fieldInfo)
+                throw new InvalidOperationException("Field instruction must have a field operand");
+
+            if (ctx.TryGetData(FIELD_KEY, out var otherFieldInfo) && !ReferenceEquals(fieldInfo, otherFieldInfo))
+                throw new InvalidOperationException("Field instruction must have the same field operand");
+
+            ctx.AddData(FIELD_KEY, fieldInfo);
             return true;
         }
     }
@@ -69,6 +76,14 @@ public static class BackingFieldResolver {
     }
 
     private static FieldInfo? GetBackingField(MethodInfo methodInfo, ILPattern pattern) {
-        var result = ILPattern.Match(methodInfo, pattern);
+        using var ctx = new ILMatchContext(null, IILProvider.FromMethodBaseAsSystem(methodInfo));
+        var result = ILPattern.Match(ctx, pattern);
+        if (result is null)
+            return null;
+
+        if (!ctx.TryGetData(FieldILPattern.FIELD_KEY, out var fieldInfo) || fieldInfo is not FieldInfo theFieldInfo)
+            return null;
+
+        return theFieldInfo;
     }
 }
