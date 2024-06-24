@@ -10,6 +10,7 @@ namespace Reaganism.MonoMix;
 public sealed class ILMixin(ILCursor cursor) {
     private ILCursor Cursor { get; } = cursor;
 
+    #region GotoXPattern
     public bool TryGotoNextPattern(MoveType moveType, ILPattern pattern) {
         var instrs = Cursor.Instrs;
         var i = Cursor.Index;
@@ -65,6 +66,7 @@ public sealed class ILMixin(ILCursor cursor) {
 
         return this;
     }
+    #endregion
 
     public static implicit operator ILCursor(ILMixin ilMixin) {
         return ilMixin.Cursor;
