@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Collections.Generic;
 using MonoMod.Cil;
@@ -15,7 +16,7 @@ namespace Reaganism.MonoMix;
 ///     Mono.Cecil-compatible IL instructions.
 /// </summary>
 public interface IILProvider : IEnumerable<Instruction> {
-    private abstract class AbstractILProvider(Instruction? instruction) : IILProvider {
+    private sealed class ILProvider(Instruction? instruction, IEnumerable<Instruction> instructions) : IILProvider {
         public Instruction? Instruction { get; set; } = instruction;
 
         public bool TryGotoPrev() {
@@ -36,31 +37,13 @@ public interface IILProvider : IEnumerable<Instruction> {
             return true;
         }
 
-        public abstract IEnumerator<Instruction> GetEnumerator();
+        public IEnumerator<Instruction> GetEnumerator() {
+            // ReSharper disable once NotDisposedResourceIsReturned
+            return instructions.GetEnumerator();
+        }
 
         IEnumerator IEnumerable.GetEnumerator() {
             return GetEnumerator();
-        }
-    }
-
-    private sealed class MethodBodyILProvider(MethodBody methodBody) : AbstractILProvider(methodBody.Instructions.First()) {
-        public override IEnumerator<Instruction> GetEnumerator() {
-            // ReSharper disable once NotDisposedResourceIsReturned
-            return ((IEnumerable<Instruction>)methodBody.Instructions).GetEnumerator();
-        }
-    }
-
-    private sealed class MethodBaseILProvider : AbstractILProvider {
-        private readonly Collection<Instruction> instructions;
-
-        public MethodBaseILProvider(MethodBase methodBase) : this(new DynamicMethodDefinition(methodBase).Definition.Body.Instructions) { }
-
-        private MethodBaseILProvider(Collection<Instruction> instructions) : base(instructions.First()) {
-            this.instructions = instructions;
-        }
-
-        public override IEnumerator<Instruction> GetEnumerator() {
-            throw new System.NotImplementedException();
         }
     }
 
@@ -92,19 +75,25 @@ public interface IILProvider : IEnumerable<Instruction> {
     /// </returns>
     bool TryGotoNext();
 
+    public static IILProvider FromMethodDefinition(MethodDefinition methodDefinition) {
+        return FromMethodBody(methodDefinition.Body);
+    }
+
     public static IILProvider FromMethodBody(MethodBody methodBody) {
-        return new MethodBodyILProvider(methodBody);
+        var instructions = methodBody.Instructions;
+        return new ILProvider(methodBody.Instructions.First(), instructions);
     }
 
     public static IILProvider FromILContext(ILContext context) {
-        return new MethodBodyILProvider(context.Body);
+        return FromMethodBody(context.Body);
     }
 
     public static IILProvider FromILCursor(ILCursor cursor) {
-        return new MethodBodyILProvider(cursor.Body);
+        return FromMethodBody(cursor.Body);
     }
 
     public static IILProvider FromMethodBase(MethodBase methodBase) {
-        return new MethodBaseILProvider(methodBase);
+        // TODO: Memory leak? We don't dispose of it...
+        return FromMethodBody(new DynamicMethodDefinition(methodBase).Definition.Body);
     }
 }
