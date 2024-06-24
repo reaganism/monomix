@@ -50,20 +50,6 @@ public interface IILProvider : IEnumerable<Instruction> {
         }
     }
 
-    private sealed class ILContextILProvider(ILContext context) : AbstractILProvider(context.Instrs.First()) {
-        public override IEnumerator<Instruction> GetEnumerator() {
-            // ReSharper disable once NotDisposedResourceIsReturned
-            return ((IEnumerable<Instruction>)context.Instrs).GetEnumerator();
-        }
-    }
-
-    private sealed class ILCursorILProvider(ILCursor cursor) : AbstractILProvider(cursor.Instrs.First()) {
-        public override IEnumerator<Instruction> GetEnumerator() {
-            // ReSharper disable once NotDisposedResourceIsReturned
-            return ((IEnumerable<Instruction>)cursor.Instrs).GetEnumerator();
-        }
-    }
-
     private sealed class MethodBaseILProvider : AbstractILProvider {
         private readonly Collection<Instruction> instructions;
 
@@ -111,11 +97,11 @@ public interface IILProvider : IEnumerable<Instruction> {
     }
 
     public static IILProvider FromILContext(ILContext context) {
-        return new ILContextILProvider(context);
+        return new MethodBodyILProvider(context.Body);
     }
 
     public static IILProvider FromILCursor(ILCursor cursor) {
-        return new ILCursorILProvider(cursor);
+        return new MethodBodyILProvider(cursor.Body);
     }
 
     public static IILProvider FromMethodBase(MethodBase methodBase) {
