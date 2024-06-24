@@ -1,10 +1,10 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
-using Mono.Collections.Generic;
 using MonoMod.Cil;
 using MonoMod.Utils;
 using MethodBody = Mono.Cecil.Cil.MethodBody;
@@ -15,8 +15,8 @@ namespace Reaganism.MonoMix;
 ///     Minimally-contractual object that provides enumeration over
 ///     Mono.Cecil-compatible IL instructions.
 /// </summary>
-public interface IILProvider : IEnumerable<Instruction> {
-    private sealed class ILProvider(Instruction? instruction, IEnumerable<Instruction> instructions) : IILProvider {
+public interface IILProvider : IEnumerable<Instruction>, IDisposable {
+    private sealed class ILProvider(Instruction? instruction, IEnumerable<Instruction> instructions, params IDisposable[] disposables) : IILProvider {
         public Instruction? Instruction { get; set; } = instruction;
 
         public bool TryGotoPrev() {
@@ -44,6 +44,11 @@ public interface IILProvider : IEnumerable<Instruction> {
 
         IEnumerator IEnumerable.GetEnumerator() {
             return GetEnumerator();
+        }
+
+        public void Dispose() {
+            foreach (var disposable in disposables)
+                disposable.Dispose();
         }
     }
 
@@ -93,7 +98,7 @@ public interface IILProvider : IEnumerable<Instruction> {
     }
 
     public static IILProvider FromMethodBase(MethodBase methodBase) {
-        // TODO: Memory leak? We don't dispose of it...
-        return FromMethodBody(new DynamicMethodDefinition(methodBase).Definition.Body);
+        var dynDef = new DynamicMethodDefinition(methodBase);
+        return new ILProvider(dynDef.Definition.Body.Instructions.First(), dynDef.Definition.Body.Instructions, dynDef);
     }
 }
