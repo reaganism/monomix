@@ -32,12 +32,13 @@ public sealed class ILMatchContext(Instruction? instruction, IILProvider ilProvi
     ///     <see langword="false"/> if the operation failed.
     /// </returns>
     public bool TryAdvance() {
-        if (Instruction is null && Direction == ILPattern.Direction.Forward)
+        if (Instruction is null)
             return false;
 
-        // TODO: We can't go backward once we've reached the forward-end.
-        // ^ Does it matter? (probably not)
-        if (Instruction?.Previous is null && Direction == ILPattern.Direction.Backward)
+        if (Instruction.Next is null && direction == ILPattern.Direction.Forward)
+            return false;
+
+        if (Instruction.Previous is null && Direction == ILPattern.Direction.Backward)
             return false;
 
         Instruction = Direction == ILPattern.Direction.Forward ? Instruction?.Next : Instruction?.Previous;

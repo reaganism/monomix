@@ -5,6 +5,8 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reaganism.MonoMix", "Reaganism.MonoMix\Reaganism.MonoMix.csproj", "{5F57F143-B589-4009-B0E5-0A56B2332454}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reaganism.MonoMix.Tests", "Reaganism.MonoMix.Tests\Reaganism.MonoMix.Tests.csproj", "{1C02CA96-E3B6-491E-819C-686AFCFBE973}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{5F57F143-B589-4009-B0E5-0A56B2332454}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5F57F143-B589-4009-B0E5-0A56B2332454}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5F57F143-B589-4009-B0E5-0A56B2332454}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C02CA96-E3B6-491E-819C-686AFCFBE973}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C02CA96-E3B6-491E-819C-686AFCFBE973}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C02CA96-E3B6-491E-819C-686AFCFBE973}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C02CA96-E3B6-491E-819C-686AFCFBE973}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
