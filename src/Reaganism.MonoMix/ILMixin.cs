@@ -9,7 +9,10 @@ namespace Reaganism.MonoMix;
 ///     An advanced wrapper over <see cref="ILCursor"/>.
 /// </summary>
 public sealed class ILMixin(ILCursor cursor) {
-    private ILCursor Cursor { get; } = cursor;
+    /// <summary>
+    ///     The <see cref="ILCursor"/> instance being wrapped.
+    /// </summary>
+    public ILCursor Cursor { get; } = cursor;
 
     #region GotoXPattern
     public bool TryGotoNextPattern(MoveType moveType, ILPattern pattern) {
