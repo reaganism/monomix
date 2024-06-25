@@ -77,8 +77,7 @@ public static class BackingFieldResolver {
 
     private static FieldInfo? GetBackingField(MethodInfo methodInfo, ILPattern pattern) {
         using var ctx = new ILMatchContext(null, IILProvider.FromMethodBaseAsSystem(methodInfo));
-        var result = ILPattern.Match(ctx, pattern);
-        if (result is null)
+        if (!ILPattern.Match(ctx, pattern).Successful)
             return null;
 
         if (!ctx.TryGetData(FieldILPattern.FIELD_KEY, out var fieldInfo) || fieldInfo is not FieldInfo theFieldInfo)

@@ -22,10 +22,12 @@ public sealed class ILMixin(ILCursor cursor) {
 
         for (; i + pattern.MinimumLength <= instrs.Count; i++) {
             ctx.Current = instrs[i];
-            if (ILPattern.Match(ctx, pattern) is not { } matchedInstruction)
+
+            // TODO: Can Current be null in a case where it's allowable here?
+            if (ILPattern.Match(ctx, pattern) is not { Successful: true, Current: not null } match)
                 continue;
 
-            Cursor.Goto(matchedInstruction, moveType, true);
+            Cursor.Goto(match.Current, moveType, true);
             return true;
         }
 
@@ -44,10 +46,12 @@ public sealed class ILMixin(ILCursor cursor) {
 
         for (; i >= 0; i--) {
             ctx.Current = instrs[i];
-            if (ILPattern.Match(ctx, pattern) is not { } matchedInstruction)
+
+            // TODO: Can Current be null in a case where it's allowable here?
+            if (ILPattern.Match(ctx, pattern) is not { Successful: true, Current: not null } match)
                 continue;
 
-            Cursor.Goto(matchedInstruction, moveType, true);
+            Cursor.Goto(match.Current, moveType, true);
             return true;
         }
 

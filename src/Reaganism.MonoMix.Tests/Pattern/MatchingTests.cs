@@ -95,7 +95,7 @@ public static class MatchingTests {
             if (!pattern.Match(ctx))
                 return false;
 
-            var match = ctx.Previous;
+            var match = ctx.Direction == Direction.Forward ? ctx.Previous : ctx.Next;
             if (match?.Operand is not FieldInfo fieldInfo)
                 throw new InvalidOperationException("Field instruction must have a field operand");
 
@@ -169,8 +169,7 @@ public static class MatchingTests {
     private static FieldInfo? GetBackingField(MethodInfo methodInfo, ILPattern pattern) {
         var provider = IILProvider.FromMethodBaseAsSystem(methodInfo);
         using (var ctx = new ILMatchContext(null, provider)) {
-            var result = ILPattern.Match(ctx, pattern);
-            if (result is null)
+            if (!ILPattern.Match(ctx, pattern).Successful)
                 return null;
 
             if (!ctx.TryGetData(FieldILPattern.FIELD_KEY, out var fieldInfo) || fieldInfo is not FieldInfo)
@@ -178,8 +177,7 @@ public static class MatchingTests {
         }
 
         using (var ctx = new ILMatchContext(provider.Last(), provider, ILPattern.Direction.Backward)) {
-            var result = ILPattern.Match(ctx, pattern);
-            if (result is null)
+            if (!ILPattern.Match(ctx, pattern).Successful)
                 return null;
 
             if (!ctx.TryGetData(FieldILPattern.FIELD_KEY, out var fieldInfo) || fieldInfo is not FieldInfo)
@@ -187,8 +185,7 @@ public static class MatchingTests {
         }
 
         using (var ctx = new ILMatchContext(null, provider)) {
-            var result = ILPattern.Match(ctx, pattern);
-            if (result is null)
+            if (!ILPattern.Match(ctx, pattern).Successful)
                 return null;
 
             if (!ctx.TryGetData(FieldILPattern.FIELD_KEY, out var fieldInfo) || fieldInfo is not FieldInfo theFieldInfo)

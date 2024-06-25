@@ -104,11 +104,11 @@ public abstract class ILPattern {
         return false;
     }
 
-    public static Instruction? Match(ILMatchContext ctx, ILPattern pattern) {
-        return pattern.Match(ctx) ? ctx.Current : null;
+    public static ILMatchResult Match(ILMatchContext ctx, ILPattern pattern) {
+        return pattern.Match(ctx) ? new ILMatchResult(true, ctx.Previous, ctx.Current, ctx.Next) : new ILMatchResult(false, null, null, null);
     }
 
-    public static Instruction? Match(Instruction? instruction, IILProvider ilProvider, Direction direction, ILPattern pattern) {
+    public static ILMatchResult Match(Instruction? instruction, IILProvider ilProvider, Direction direction, ILPattern pattern) {
         return Match(new ILMatchContext(instruction, ilProvider, direction), pattern);
     }
 
