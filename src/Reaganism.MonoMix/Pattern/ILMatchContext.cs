@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using Mono.Cecil.Cil;
 
 namespace Reaganism.MonoMix.Pattern;
 
-public sealed class ILMatchContext(Instruction? instruction, IILProvider ilProvider, ILPattern.Direction direction = ILPattern.Direction.Forward) : IDisposable {
+public sealed class ILMatchContext(Instruction? instruction, ILPattern.Direction direction = ILPattern.Direction.Forward) {
     private sealed class InstructionWindow {
         public Instruction? Previous { get; private set; }
 
@@ -147,7 +146,7 @@ public sealed class ILMatchContext(Instruction? instruction, IILProvider ilProvi
     public ILPattern.Direction Direction { get; } = direction;
 
     private readonly Dictionary<object, object> data = [];
-    private readonly InstructionWindow instructionWindow = new(instruction ?? ilProvider.First());
+    private readonly InstructionWindow instructionWindow = new(instruction);
 
     public bool TryGetData(object key, [NotNullWhen(returnValue: true)] out object? value) {
         return data.TryGetValue(key, out value);
@@ -181,9 +180,5 @@ public sealed class ILMatchContext(Instruction? instruction, IILProvider ilProvi
     /// </returns>
     public bool TryAdvance() {
         return instructionWindow.TryAdvance(Direction);
-    }
-
-    public void Dispose() {
-        ilProvider.Dispose();
     }
 }

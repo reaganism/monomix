@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Reflection;
 using Mono.Cecil.Cil;
 using Reaganism.MonoMix.Pattern;
@@ -76,7 +77,7 @@ public static class BackingFieldResolver {
     }
 
     private static FieldInfo? GetBackingField(MethodInfo methodInfo, ILPattern pattern) {
-        using var ctx = new ILMatchContext(null, IILProvider.FromMethodBaseAsSystem(methodInfo));
+        var ctx = new ILMatchContext(InstructionProvider.FromMethodBaseAsSystem(methodInfo).First());
         if (!ILPattern.Match(ctx, pattern).Successful)
             return null;
 

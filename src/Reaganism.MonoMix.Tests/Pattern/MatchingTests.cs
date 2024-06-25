@@ -172,8 +172,10 @@ public static class MatchingTests {
         // using the final result). This is done to ensure consistent behavior
         // in both directions.
 
-        var provider = IILProvider.FromMethodBaseAsSystem(methodInfo);
-        using (var ctx = new ILMatchContext(null, provider)) {
+        var instrs = InstructionProvider.FromMethodBaseAsSystem(methodInfo).ToList();
+
+        {
+            var ctx = new ILMatchContext(instrs.First());
             if (!ILPattern.Match(ctx, pattern).Successful)
                 return null;
 
@@ -181,7 +183,8 @@ public static class MatchingTests {
                 return null;
         }
 
-        using (var ctx = new ILMatchContext(provider.Last(), provider, ILPattern.Direction.Backward)) {
+        {
+            var ctx = new ILMatchContext(instrs.Last(), ILPattern.Direction.Backward);
             if (!ILPattern.Match(ctx, pattern).Successful)
                 return null;
 
@@ -189,7 +192,8 @@ public static class MatchingTests {
                 return null;
         }
 
-        using (var ctx = new ILMatchContext(null, provider)) {
+        {
+            var ctx = new ILMatchContext(instrs.First());
             if (!ILPattern.Match(ctx, pattern).Successful)
                 return null;
 

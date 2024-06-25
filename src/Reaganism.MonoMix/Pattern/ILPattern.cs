@@ -108,8 +108,8 @@ public abstract class ILPattern {
         return pattern.Match(ctx) ? new ILMatchResult(true, ctx.Previous, ctx.Current, ctx.Next) : new ILMatchResult(false, null, null, null);
     }
 
-    public static ILMatchResult Match(Instruction? instruction, IILProvider ilProvider, Direction direction, ILPattern pattern) {
-        return Match(new ILMatchContext(instruction, ilProvider, direction), pattern);
+    public static ILMatchResult Match(Instruction? instruction, Direction direction, ILPattern pattern) {
+        return Match(new ILMatchContext(instruction, direction), pattern);
     }
 
     public static ILPattern Optional(OpCode opCode) {
