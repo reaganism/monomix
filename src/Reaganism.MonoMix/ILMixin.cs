@@ -21,7 +21,7 @@ public sealed class ILMixin(ILCursor cursor) {
         using var ctx = new ILMatchContext(instrs[i], IILProvider.FromILCursor(Cursor));
 
         for (; i + pattern.MinimumLength <= instrs.Count; i++) {
-            ctx.Instruction = instrs[i];
+            ctx.Current = instrs[i];
             if (ILPattern.Match(ctx, pattern) is not { } matchedInstruction)
                 continue;
 
@@ -43,7 +43,7 @@ public sealed class ILMixin(ILCursor cursor) {
         using var ctx = new ILMatchContext(instrs[i], IILProvider.FromILCursor(Cursor), ILPattern.Direction.Backward);
 
         for (; i >= 0; i--) {
-            ctx.Instruction = instrs[i];
+            ctx.Current = instrs[i];
             if (ILPattern.Match(ctx, pattern) is not { } matchedInstruction)
                 continue;
 

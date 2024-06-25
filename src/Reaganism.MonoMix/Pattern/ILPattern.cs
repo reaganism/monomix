@@ -60,10 +60,10 @@ public abstract class ILPattern {
         public override int MinimumLength => 1;
 
         public override bool Match(ILMatchContext ctx) {
-            if (ctx.Instruction is null)
+            if (ctx.Current is null)
                 return false;
 
-            var success = ctx.Instruction.OpCode == opCode;
+            var success = ctx.Current.OpCode == opCode;
             ctx.TryAdvance();
             return success;
         }
@@ -96,16 +96,16 @@ public abstract class ILPattern {
     ///     <paramref name="ctx"/> if the match fails.
     /// </remarks>
     public bool TryMatch(ILMatchContext ctx) {
-        var instruction = ctx.Instruction;
+        var instruction = ctx.Current;
         if (Match(ctx))
             return true;
 
-        ctx.Instruction = instruction;
+        ctx.Current = instruction;
         return false;
     }
 
     public static Instruction? Match(ILMatchContext ctx, ILPattern pattern) {
-        return pattern.Match(ctx) ? ctx.Instruction : null;
+        return pattern.Match(ctx) ? ctx.Current : null;
     }
 
     public static Instruction? Match(Instruction? instruction, IILProvider ilProvider, Direction direction, ILPattern pattern) {
