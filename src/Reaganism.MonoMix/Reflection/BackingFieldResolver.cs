@@ -18,7 +18,7 @@ public static class BackingFieldResolver {
             if (!pattern.Match(ctx))
                 return false;
 
-            var match = ctx.Previous;
+            var match = ctx.DirectionalPrevious;
             if (match?.Operand is not FieldInfo fieldInfo)
                 throw new InvalidOperationException("Field instruction must have a field operand");
 

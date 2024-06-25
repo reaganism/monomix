@@ -102,7 +102,21 @@ public sealed class ILMatchContext(Instruction? instruction, IILProvider ilProvi
         }
     }
 
+    /// <summary>
+    ///     The instruction previous to the current instruction relative to the
+    ///     instruction list.
+    /// </summary>
     public Instruction? Previous => instructionWindow.Previous;
+
+    /// <summary>
+    ///     The instruction functionally previous to the current instruction
+    ///     accounting for the <see cref="ILPattern.Direction"/>.
+    /// </summary>
+    public Instruction? DirectionalPrevious => Direction switch {
+        ILPattern.Direction.Forward => Previous,
+        ILPattern.Direction.Backward => Next,
+        _ => throw new ArgumentOutOfRangeException(nameof(Direction), Direction, null),
+    };
 
     /// <summary>
     ///     The current instruction being pointed to. It is possible for
@@ -114,7 +128,21 @@ public sealed class ILMatchContext(Instruction? instruction, IILProvider ilProvi
         set => instructionWindow.SetCurrentInstruction(value);
     }
 
+    /// <summary>
+    ///     The instruction following the current instruction relative to the
+    ///     instruction list.
+    /// </summary>
     public Instruction? Next => instructionWindow.Next;
+
+    /// <summary>
+    ///     The instruction functionally following the current instruction
+    ///     accounting for the <see cref="ILPattern.Direction"/>.
+    /// </summary>
+    public Instruction? DirectionalNext => Direction switch {
+        ILPattern.Direction.Forward => Next,
+        ILPattern.Direction.Backward => Previous,
+        _ => throw new ArgumentOutOfRangeException(nameof(Direction), Direction, null),
+    };
 
     public ILPattern.Direction Direction { get; } = direction;
 

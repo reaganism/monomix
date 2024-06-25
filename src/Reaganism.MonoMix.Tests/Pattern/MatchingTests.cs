@@ -95,7 +95,7 @@ public static class MatchingTests {
             if (!pattern.Match(ctx))
                 return false;
 
-            var match = ctx.Direction == Direction.Forward ? ctx.Previous : ctx.Next;
+            var match = ctx.DirectionalPrevious;
             if (match?.Operand is not FieldInfo fieldInfo)
                 throw new InvalidOperationException("Field instruction must have a field operand");
 
@@ -167,6 +167,11 @@ public static class MatchingTests {
     }
 
     private static FieldInfo? GetBackingField(MethodInfo methodInfo, ILPattern pattern) {
+        // For testing purposes, we duplicate code here; we search forward, then
+        // repeat the search backward, then repeat it forward again (before
+        // using the final result). This is done to ensure consistent behavior
+        // in both directions.
+
         var provider = IILProvider.FromMethodBaseAsSystem(methodInfo);
         using (var ctx = new ILMatchContext(null, provider)) {
             if (!ILPattern.Match(ctx, pattern).Successful)
