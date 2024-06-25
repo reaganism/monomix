@@ -15,6 +15,17 @@ public sealed class ILMixin(ILCursor cursor) {
     public ILCursor Cursor { get; } = cursor;
 
     #region GotoXPattern
+    /// <summary>
+    ///     Attempts to move the cursor to the next occurrence of a pattern.
+    /// </summary>
+    /// <param name="moveType">
+    ///     Controls the cursor position relative to the moved-to instruction.
+    /// </param>
+    /// <param name="pattern">The pattern to match.</param>
+    /// <returns>
+    ///     <see langword="true"/> if the cursor was moved; otherwise,
+    ///     <see langword="false"/>.
+    /// </returns>
     public bool TryGotoNextPattern(MoveType moveType, ILPattern pattern) {
         var instrs = Cursor.Instrs;
         var i = Cursor.Index;
@@ -37,6 +48,17 @@ public sealed class ILMixin(ILCursor cursor) {
         return false;
     }
 
+    /// <summary>
+    ///     Moves the cursor to the previous occurrence of a pattern.
+    /// </summary>
+    /// <param name="moveType">
+    ///     Controls the cursor position relative to the moved-to instruction.
+    /// </param>
+    /// <param name="pattern">The pattern to match.</param>
+    /// <returns>
+    ///     <see langword="true"/> if the cursor was moved; otherwise,
+    ///     <see langword="false"/>.
+    /// </returns>
     public bool TryGotoPrevPattern(MoveType moveType, ILPattern pattern) {
         var instrs = Cursor.Instrs;
         var i = Cursor.Index - 1;
@@ -61,6 +83,13 @@ public sealed class ILMixin(ILCursor cursor) {
         return false;
     }
 
+    /// <summary>
+    ///     Moves the cursor to the next occurrence of a pattern.
+    /// </summary>
+    /// <param name="moveType">
+    ///     Controls the cursor position relative to the moved-to instruction.
+    /// </param>
+    /// <param name="pattern">The pattern to match.</param>
     public ILMixin GotoNextPattern(MoveType moveType, ILPattern pattern) {
         if (!TryGotoNextPattern(moveType, pattern))
             throw new KeyNotFoundException();
@@ -68,6 +97,13 @@ public sealed class ILMixin(ILCursor cursor) {
         return this;
     }
 
+    /// <summary>
+    ///     Moves the cursor to the previous occurrence of a pattern.
+    /// </summary>
+    /// <param name="moveType">
+    ///     Controls the cursor position relative to the moved-to instruction.
+    /// </param>
+    /// <param name="pattern">The pattern to match.</param>
     public ILMixin GotoPrevPattern(MoveType moveType, ILPattern pattern) {
         if (!TryGotoPrevPattern(moveType, pattern))
             throw new KeyNotFoundException();
