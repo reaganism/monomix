@@ -5,6 +5,13 @@ using Mono.Cecil.Cil;
 
 namespace Reaganism.MonoMix.Pattern;
 
+/// <summary>
+///     Context for an IL match operation.
+/// </summary>
+/// <param name="instruction">
+///     The starting instruction additionally providing the instruction list.
+/// </param>
+/// <param name="direction">The direction to match in.</param>
 public sealed class ILMatchContext(Instruction? instruction, ILPattern.Direction direction = ILPattern.Direction.Forward) {
     private sealed class InstructionWindow {
         public Instruction? Previous { get; private set; }
@@ -143,15 +150,24 @@ public sealed class ILMatchContext(Instruction? instruction, ILPattern.Direction
         _ => throw new ArgumentOutOfRangeException(nameof(Direction), Direction, null),
     };
 
+    /// <summary>
+    ///     The direction to match in.
+    /// </summary>
     public ILPattern.Direction Direction { get; } = direction;
 
     private readonly Dictionary<object, object> data = [];
     private readonly InstructionWindow instructionWindow = new(instruction);
 
+    /// <summary>
+    ///     Retrieves data from the context.
+    /// </summary>
     public bool TryGetData(object key, [NotNullWhen(returnValue: true)] out object? value) {
         return data.TryGetValue(key, out value);
     }
 
+    /// <summary>
+    ///     Adds data to the context.
+    /// </summary>
     public void AddData(object key, object value) {
         data[key] = value;
     }
