@@ -69,6 +69,14 @@ public abstract class ILPattern {
         }
     }
 
+    /// <summary>
+    ///     The minimum length of the pattern.
+    /// </summary>
+    /// <remarks>
+    ///     This is used to optimize and safeguard searching in external
+    ///     implementations. It computes the minimum length a pattern may
+    ///     evaluate to.
+    /// </remarks>
     public abstract int MinimumLength { get; }
 
     /// <summary>
@@ -104,34 +112,58 @@ public abstract class ILPattern {
         return false;
     }
 
+    /// <summary>
+    ///     Matches a pattern given a context, producing a result.
+    /// </summary>
     public static ILMatchResult Match(ILMatchContext ctx, ILPattern pattern) {
         return pattern.Match(ctx) ? new ILMatchResult(true, ctx.Previous, ctx.Current, ctx.Next) : new ILMatchResult(false, null, null, null);
     }
 
+    /// <summary>
+    ///     Matches a pattern given a context, producing a result.
+    /// </summary>
     public static ILMatchResult Match(Instruction? instruction, Direction direction, ILPattern pattern) {
         return Match(new ILMatchContext(instruction, direction), pattern);
     }
 
+    /// <summary>
+    ///     Optionally matches the given <paramref name="opCode"/>
+    /// </summary>
     public static ILPattern Optional(OpCode opCode) {
         return Optional(OpCode(opCode));
     }
 
+    /// <summary>
+    ///     Optionally matches the given <paramref name="opCodes"/>
+    /// </summary>
     public static ILPattern Optional(params OpCode[] opCodes) {
         return Optional(Sequence(opCodes.Select(OpCode).ToArray()));
     }
 
+    /// <summary>
+    ///     Optionally matches the given <paramref name="pattern"/>
+    /// </summary>
     public static ILPattern Optional(ILPattern pattern) {
         return new OptionalILPattern(pattern);
     }
 
+    /// <summary>
+    ///     Matches a sequence of <paramref name="patterns"/>.
+    /// </summary>
     public static ILPattern Sequence(params ILPattern[] patterns) {
         return new SequenceILPattern(patterns);
     }
 
+    /// <summary>
+    ///     Matches either <paramref name="either"/> or <paramref name="or"/>.
+    /// </summary>
     public static ILPattern Either(ILPattern either, ILPattern or) {
         return new EitherILPattern(either, or);
     }
 
+    /// <summary>
+    ///     Matches the given <paramref name="opCode"/>.
+    /// </summary>
     public static ILPattern OpCode(OpCode opCode) {
         return new OpCodeILPattern(opCode);
     }

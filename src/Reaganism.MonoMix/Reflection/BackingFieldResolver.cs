@@ -64,6 +64,15 @@ public static class BackingFieldResolver {
         ILPattern.OpCode(OpCodes.Ret)
     );
 
+    /// <summary>
+    ///     Gets the backing field of a property.
+    /// </summary>
+    /// <param name="propertyInfo">The property.</param>
+    /// <returns>
+    ///     The backing field of the property, or <see langword="null"/> if the
+    ///     property does not have a backing field (or it for some reason could
+    ///     not be resolved).
+    /// </returns>
     public static FieldInfo? GetBackingField(this PropertyInfo propertyInfo) {
         var getter = propertyInfo.GetGetMethod(true);
         if (getter is not null)
