@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Reaganism.Recon;
 
@@ -85,6 +86,34 @@ public interface ICursor<T> {
     ///     otherwise, <see langword="false"/>.
     /// </returns>
     bool TryGotoPrevious(MoveType moveType = MoveType.Before, params Func<T, bool>[] predicates);
+
+    /// <summary>
+    ///     Finds the next occurrences of a series of elements matching the
+    ///     given set of predicates with gaps permitted.
+    /// </summary>
+    /// <param name="elements">
+    ///     A reference to each element in the found set of elements.
+    /// </param>
+    /// <param name="predicates">The predicates to match.</param>
+    /// <returns>
+    ///     <see langword="true"/> if the elements were found; otherwise,
+    ///     <see langword="false"/>.
+    /// </returns>
+    bool TryFindNext([NotNullWhen(returnValue: true)] out T[]? elements, params Func<T, bool>[] predicates);
+
+    /// <summary>
+    ///     Finds the previous occurrences of a series of elements matching the
+    ///     given set of predicates with gaps permitted.
+    /// </summary>
+    /// <param name="elements">
+    ///     A reference to each element found in the set of elements.
+    /// </param>
+    /// <param name="predicates">The predicates to match.</param>
+    /// <returns>
+    ///     <see langword="true"/> if the elements were found; otherwise,
+    ///     <see langword="false"/>.
+    /// </returns>
+    bool TryFindPrevious([NotNullWhen(returnValue: true)] out T[]? elements, params Func<T, bool>[] predicates);
 
     /// <summary>
     ///     Attempts to advance the cursor in the specified direction.
@@ -216,6 +245,32 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
         return false;
     }
 
+    public bool TryFindNext([NotNullWhen(true)] out T[]? elements, params Func<T, bool>[] predicates) {
+        elements = new T[predicates.Length];
+
+        for (var i = 0; i < predicates.Length; i++) {
+            if (!TryGotoNext(MoveType.Before, predicates[i]))
+                return false;
+
+            elements[i] = Next!;
+        }
+
+        return true;
+    }
+
+    public bool TryFindPrevious([NotNullWhen(true)] out T[]? elements, params Func<T, bool>[] predicates) {
+        elements = new T[predicates.Length];
+
+        for (var i = predicates.Length - 1; i >= 0; i--) {
+            if (!TryGotoPrevious(MoveType.Before, predicates[i]))
+                return false;
+
+            elements[i] = Next!;
+        }
+
+        return true;
+    }
+
     public bool TryAdvance(Direction direction) {
         if (direction == Direction.Forward && Next is null)
             return false;
@@ -287,6 +342,34 @@ public static class CursorExtensions {
     public static void GotoPrevious<T>(this ICursor<T> cursor, MoveType moveType = MoveType.Before, params Func<T, bool>[] predicates) {
         if (!cursor.TryGotoPrevious(moveType, predicates))
             throw new InvalidOperationException("Cannot advance cursor given the predicates.");
+    }
+
+    /// <summary>
+    ///     Finds the next occurrences of a series of elements matching the
+    ///     given set of predicates with gaps permitted.
+    /// </summary>
+    /// <param name="cursor">The cursor.</param>
+    /// <param name="elements">
+    ///     A reference to each element in the found set of elements.
+    /// </param>
+    /// <param name="predicates">The predicates to match.</param>
+    public static void FindNext<T>(this ICursor<T> cursor, out T[] elements, params Func<T, bool>[] predicates) {
+        if (!cursor.TryFindNext(out elements!, predicates))
+            throw new InvalidOperationException("Cannot find the specified elements.");
+    }
+
+    /// <summary>
+    ///     Finds the previous occurrences of a series of elements matching the
+    ///     given set of predicates with gaps permitted.
+    /// </summary>
+    /// <param name="cursor">The cursor.</param>
+    /// <param name="elements">
+    ///     A reference to each element found in the set of elements.
+    /// </param>
+    /// <param name="predicates">The predicates to match.</param>
+    public static void FindPrevious<T>(this ICursor<T> cursor, out T[]? elements, params Func<T, bool>[] predicates) {
+        if (!cursor.TryFindPrevious(out elements!, predicates))
+            throw new InvalidOperationException("Cannot find the specified elements.");
     }
 
     /// <summary>
