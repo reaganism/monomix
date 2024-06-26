@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Reaganism.Recon;
 
@@ -153,9 +154,8 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
     }
 
     public ICursor<T> Goto(int index, CursorMoveType moveType = CursorMoveType.Before) {
-        // Support relative negative indexing. TODO: Why?
         if (index < 0)
-            index += Elements.Count;
+            throw new InvalidOperationException("Cannot go to a negative index. This behavior differs from MonoMod's relative negative indexing; did you mean to use GotoRelative?");
 
         return Goto(index == Elements.Count ? default : Elements[index], moveType);
     }
@@ -166,5 +166,14 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
 
     public void Advance(Direction direction) {
         throw new System.NotImplementedException();
+    }
+}
+
+/// <summary>
+///     Provides extension methods for <see cref="ICursor{T}"/> implementations.
+/// </summary>
+public static class CursorExtensions {
+    public static ICursor<T> GotoRelative<T>(this ICursor<T> cursor, int offset) {
+        return cursor.Goto(cursor.Index + offset);
     }
 }
