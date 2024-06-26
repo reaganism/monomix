@@ -10,4 +10,12 @@
         <PackageReference Include="MonoMod.RuntimeDetour" Version="25.1.0"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <ProjectReference Include="..\Reaganism.Recon\Reaganism.Recon.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Cil\" />
+    </ItemGroup>
+
 </Project>

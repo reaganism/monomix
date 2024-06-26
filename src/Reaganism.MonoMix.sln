@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reaganism.MonoMix", "Reagan
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reaganism.MonoMix.Tests", "Reaganism.MonoMix.Tests\Reaganism.MonoMix.Tests.csproj", "{1C02CA96-E3B6-491E-819C-686AFCFBE973}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Reaganism.Recon", "Reaganism.Recon\Reaganism.Recon.csproj", "{8EA6D4D6-462B-4F92-B2F6-3C35CDF4931B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{1C02CA96-E3B6-491E-819C-686AFCFBE973}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1C02CA96-E3B6-491E-819C-686AFCFBE973}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1C02CA96-E3B6-491E-819C-686AFCFBE973}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8EA6D4D6-462B-4F92-B2F6-3C35CDF4931B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8EA6D4D6-462B-4F92-B2F6-3C35CDF4931B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8EA6D4D6-462B-4F92-B2F6-3C35CDF4931B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8EA6D4D6-462B-4F92-B2F6-3C35CDF4931B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
