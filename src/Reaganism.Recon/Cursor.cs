@@ -69,14 +69,6 @@ public interface ICursor<T> {
     ICursor<T> Goto(T? element, CursorMoveType moveType = CursorMoveType.Before);
 
     /// <summary>
-    ///     Moves the cursor to the element at the specified index.
-    /// </summary>
-    /// <param name="index">The index of the target element.</param>
-    /// <param name="moveType">How to move to it.</param>
-    /// <returns>Returns <see langword="this"/> for chaining.</returns>
-    ICursor<T> Goto(int index, CursorMoveType moveType = CursorMoveType.Before);
-
-    /// <summary>
     ///     Attempts to advance the cursor in the specified direction.
     /// </summary>
     /// <param name="direction">The direction to advance in.</param>
@@ -85,12 +77,6 @@ public interface ICursor<T> {
     ///     otherwise, <see langword="false"/>.
     /// </returns>
     bool TryAdvance(Direction direction);
-
-    /// <summary>
-    ///     Advances the cursor in the specified direction.
-    /// </summary>
-    /// <param name="direction">The direction to advance in.</param>
-    void Advance(Direction direction);
 }
 
 /// <summary>
@@ -113,7 +99,7 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
 
     public int Index {
         get => next is null ? Elements.Count : Elements.IndexOf(next);
-        set => Goto(value);
+        set => this.GotoIndex(value);
     }
 
     private T? next;
@@ -153,13 +139,6 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
         return this;
     }
 
-    public ICursor<T> Goto(int index, CursorMoveType moveType = CursorMoveType.Before) {
-        if (index < 0)
-            throw new InvalidOperationException("Cannot go to a negative index. This behavior differs from MonoMod's relative negative indexing; did you mean to use GotoRelative?");
-
-        return Goto(index == Elements.Count ? default : Elements[index], moveType);
-    }
-
     public bool TryAdvance(Direction direction) {
         if (direction == Direction.Forward && Next is null)
             return false;
@@ -170,18 +149,43 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
         this.GotoRelative(direction == Direction.Forward ? 1 : -1);
         return true;
     }
-
-    public void Advance(Direction direction) {
-        if (!TryAdvance(direction))
-            throw new InvalidOperationException("Cannot advance cursor in the specified direction.");
-    }
 }
 
 /// <summary>
 ///     Provides extension methods for <see cref="ICursor{T}"/> implementations.
 /// </summary>
 public static class CursorExtensions {
+    /// <summary>
+    ///     Moves the cursor to the element at the specified index.
+    /// </summary>
+    /// <param name="cursor">The cursor.</param>
+    /// <param name="index">The index of the target element.</param>
+    /// <param name="moveType">How to move to it.</param>
+    /// <returns>The <paramref name="cursor"/> for chaining.</returns>
+    public static ICursor<T> GotoIndex<T>(this ICursor<T> cursor, int index, CursorMoveType moveType = CursorMoveType.Before) {
+        if (index < 0)
+            throw new InvalidOperationException("Cannot go to a negative index. This behavior differs from MonoMod's relative negative indexing; did you mean to use GotoRelative?");
+
+        return cursor.Goto(index == cursor.Elements.Count ? default : cursor.Elements[index], moveType);
+    }
+
+    /// <summary>
+    ///     Moves the cursor to the element at the specified index.
+    /// </summary>
+    /// <param name="cursor">The cursor.</param>
+    /// <param name="offset">The offset relative to the index.</param>
+    /// <returns>The <paramref name="cursor"/> for chaining.</returns>
     public static ICursor<T> GotoRelative<T>(this ICursor<T> cursor, int offset) {
-        return cursor.Goto(cursor.Index + offset);
+        return GotoIndex(cursor, cursor.Index + offset);
+    }
+
+    /// <summary>
+    ///     Advances the cursor in the specified direction.
+    /// </summary>
+    /// <param name="cursor">The cursor.</param>
+    /// <param name="direction">The direction to advance in.</param>
+    public static void Advance<T>(this ICursor<T> cursor, Direction direction) {
+        if (!cursor.TryAdvance(direction))
+            throw new InvalidOperationException("Cannot advance cursor in the specified direction.");
     }
 }

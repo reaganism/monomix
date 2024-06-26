@@ -1,7 +1,6 @@
-﻿using Reaganism.Recon;
+﻿using System.Collections.Generic;
+using Reaganism.Recon;
 
 namespace Reaganism.MonoMix.Cil;
 
-public class ILInstructionCursor : ICursor<ILInstruction> {
-    public IElementWindow<ILInstruction> Window { get; } = new ElementWindow<ILInstruction>();
-}
+public class ILInstructionCursor(IList<ILInstruction> elements) : Cursor<ILInstruction>(elements) { }
