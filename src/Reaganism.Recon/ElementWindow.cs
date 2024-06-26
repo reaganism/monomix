@@ -53,7 +53,7 @@ public interface IElementWindow<T> where T : class, IDoublyLinkedElement<T> {
 /// <summary>
 ///     A simple implementation of <see cref="IElementWindow{T}"/>.
 /// </summary>
-/// <typeparam name="T">The element type.</typeparam>
+/// <typeparam name="T">The doubly-linked element type.</typeparam>
 public class ElementWindow<T> : IElementWindow<T> where T : class, IDoublyLinkedElement<T> {
     public T? Previous { get; private set; }
 
