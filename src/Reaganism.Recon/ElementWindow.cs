@@ -1,37 +1,31 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Reaganism.Recon;
 
 /// <summary>
-///     A window that abstracts over a doubly-linked list, providing views
-///     into the <see cref="Previous"/>, <see cref="Current"/>, and
-///     <see cref="Next"/> elements.
+///     A window that abstracts over a list, positioning itself in between list
+///     elements and providing access to the elements before
+///     (<see cref="Previous"/>) and after (<see cref="Next"/>
 /// </summary>
-/// <typeparam name="T">The doubly-linked element type.</typeparam>
-/// <remarks>
-///     It is possible for the <see cref="Current"/> element to be
-///     <see langword="null"/>. This is useful for representing being positioned
-///     at the very start or very end of a list for purposes of allowing an
-///     <see cref="Advance"/> operation to be performed successfully when
-///     certain match operations still expect them to (e.g. if a following match
-///     in a pattern only cares about the [directional] next or [directional]
-///     previous elements).
-/// </remarks>
+/// <typeparam name="T">The element type.</typeparam>
 public interface IElementWindow<T> {
     /// <summary>
-    ///     The element previous to the <see cref="Current"/>.
+    ///     The element before the current position.
     /// </summary>
     T? Previous { get; }
 
     /// <summary>
-    ///     The current element.
-    /// </summary>
-    T? Current { get; set; }
-
-    /// <summary>
-    ///     The element following the <see cref="Current"/>.
+    ///     The element after the current position
     /// </summary>
     T? Next { get; }
+
+    /// <summary>
+    ///     The index of the element immediately following the position.
+    /// </summary>
+    int Index { get; }
+
+    void Goto(T? element);
 
     /// <summary>
     ///     Attempts to advance the window in the specified direction.
@@ -53,23 +47,13 @@ public interface IElementWindow<T> {
 /// <summary>
 ///     A simple implementation of <see cref="IElementWindow{T}"/>.
 /// </summary>
-/// <typeparam name="T">The doubly-linked element type.</typeparam>
-public class ElementWindow<T> : IElementWindow<T> where T : class, IDoublyLinkedElement<T> {
+/// <typeparam name="T">The element type.</typeparam>
+public class ElementWindow<T>(IList<T> list) : IElementWindow<T> {
     public T? Previous { get; private set; }
 
-    private T? current;
-
-    public T? Current {
-        get => current;
-
-        set {
-            Previous = value?.Previous?.Value;
-            current = value;
-            Next = value?.Next?.Value;
-        }
-    }
-
     public T? Next { get; private set; }
+
+    private readonly IList<T> list = list;
 
     public bool TryAdvance(Direction direction) {
         switch (direction) {
