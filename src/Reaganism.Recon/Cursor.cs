@@ -1,4 +1,6 @@
-﻿namespace Reaganism.Recon;
+﻿using System.Collections.Generic;
+
+namespace Reaganism.Recon;
 
 // TODO: AfterLabel? How to generalize?
 /// <summary>
@@ -28,23 +30,28 @@ public enum CursorMoveType {
 /// </remarks>
 public interface ICursor<T> {
     /// <summary>
+    ///     The collection of elements the cursor is positioned within.
+    /// </summary>
+    IList<T> Elements { get; }
+
+    /// <summary>
     ///     The instruction immediately preceding the cursor position;
     ///     <see langword="null"/> if the cursor is at the beginning of the
     ///     collection.
     /// </summary>
-    T? Previous { get; }
+    T? Previous { get; set; }
 
     /// <summary>
     ///     The instruction immediately following the cursor position;
     ///     <see langword="null"/> if the cursor is at the end of the
     ///     collection.
     /// </summary>
-    T? Next { get; }
+    T? Next { get; set; }
 
     /// <summary>
     ///     The index of the element immediately following the cursor position.
     /// </summary>
-    int Index { get; }
+    int Index { get; set; }
 
     // TODO: Provide TryGoto functions?
     // Goto(T?, ...) doesn't need one most likely because you use references
@@ -83,4 +90,81 @@ public interface ICursor<T> {
     /// </summary>
     /// <param name="direction">The direction to advance in.</param>
     void Advance(Direction direction);
+}
+
+/// <summary>
+///     An abstract implementation of <see cref="ICursor{T}"/> that provides a
+///     base for specialized cursor implementations.
+/// </summary>
+/// <typeparam name="T">The element type.</typeparam>
+public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
+    public IList<T> Elements { get; } = elements;
+
+    public T? Previous {
+        get => Next is null ? Elements[^1] : Elements[Index - 1];
+        set => Goto(value, CursorMoveType.After);
+    }
+
+    public T? Next {
+        get => next;
+        set => Goto(value);
+    }
+
+    public int Index {
+        get => next is null ? Elements.Count : Elements.IndexOf(next);
+        set => Goto(value);
+    }
+
+    private T? next;
+
+    public ICursor<T> Goto(T? element, CursorMoveType moveType = CursorMoveType.Before) {
+        /* Understanding move logic:
+         *   Before:
+         *     Position the cursor *before* the given element, meaning we set
+         *     `next` to `element. If `element` is null, it means we want to go
+         *     to the end of the list.
+         *   After:
+         *     Position the cursor *after* the given element, meaning we set
+         *     `next` to the element after `element`. If `element` is null, that
+         *     means we're at the end of the list. We don't want to wrap so we
+         *     just set it to null and move on. If `element` is the last element
+         *     (and as such, the following element does not exist), we similarly
+         *     set `next` to null. Otherwise, we set `next` to the element after
+         *     `element`.
+         */
+
+        if (moveType == CursorMoveType.After) {
+            if (element is null) {
+                next = default;
+            }
+            else {
+                var index = Elements.IndexOf(element);
+                if (index == -1)
+                    throw new System.ArgumentException("Element not found in collection.", nameof(element));
+
+                next = index >= Elements.Count ? default : Elements[index + 1];
+            }
+        }
+        else {
+            next = element;
+        }
+
+        return this;
+    }
+
+    public ICursor<T> Goto(int index, CursorMoveType moveType = CursorMoveType.Before) {
+        // Support relative negative indexing. TODO: Why?
+        if (index < 0)
+            index += Elements.Count;
+
+        return Goto(index == Elements.Count ? default : Elements[index], moveType);
+    }
+
+    public bool TryAdvance(Direction direction) {
+        throw new System.NotImplementedException();
+    }
+
+    public void Advance(Direction direction) {
+        throw new System.NotImplementedException();
+    }
 }
