@@ -3,23 +3,6 @@ using System.Collections.Generic;
 
 namespace Reaganism.Recon;
 
-// TODO: AfterLabel? How to generalize?
-/// <summary>
-///     Specifies how a cursor should be positioned relative to the target of a
-///     search function.
-/// </summary>
-public enum CursorMoveType {
-    /// <summary>
-    ///     Moves the cursor before the first element in the search.
-    /// </summary>
-    Before,
-
-    /// <summary>
-    ///     Moves the cursor after the last element in the search.
-    /// </summary>
-    After,
-}
-
 /// <summary>
 ///     A cursor that may be positioned between elements in a collection.
 /// </summary>
@@ -54,6 +37,13 @@ public interface ICursor<T> {
     /// </summary>
     int Index { get; set; }
 
+    /// <summary>
+    ///     Whether the cursor has been positioned by a search function and if
+    ///     the next search should ignore the element preceding or following
+    ///     the cursor.
+    /// </summary>
+    SearchTarget SearchTarget { get; set; }
+
     // TODO: Provide TryGoto functions?
     // Goto(T?, ...) doesn't need one most likely because you use references
     // that already exist.
@@ -65,8 +55,36 @@ public interface ICursor<T> {
     /// </summary>
     /// <param name="element">The target element.</param>
     /// <param name="moveType">How to move to it.</param>
+    /// <param name="setTarget">
+    ///     Whether to set the <see cref="SearchTarget"/> and skip the target
+    ///     element with the next search function.
+    /// </param>
     /// <returns>Returns <see langword="this"/> for chaining.</returns>
-    ICursor<T> Goto(T? element, CursorMoveType moveType = CursorMoveType.Before);
+    ICursor<T> Goto(T? element, MoveType moveType = MoveType.Before, bool setTarget = false);
+
+    /// <summary>
+    ///     Search forward and moves the cursor to the next sequence of elements
+    ///     matching the corresponding predicates.
+    /// </summary>
+    /// <param name="moveType">How to move it.</param>
+    /// <param name="predicates">The predicates to evaluate.</param>
+    /// <returns>
+    ///     <see langword="true"/> if the cursor was successfully advanced;
+    ///     otherwise, <see langword="false"/>.
+    /// </returns>
+    bool TryGotoNext(MoveType moveType = MoveType.Before, params Func<T, bool>[] predicates);
+
+    /// <summary>
+    ///     Search backward and moves the cursor to the next sequence of
+    ///     elements matching the corresponding predicates.
+    /// </summary>
+    /// <param name="moveType">How to move it.</param>
+    /// <param name="predicates">The predicates to evaluate.</param>
+    /// <returns>
+    ///     <see langword="true"/> if the cursor was successfully advanced;
+    ///     otherwise, <see langword="false"/>.
+    /// </returns>
+    bool TryGotoPrevious(MoveType moveType = MoveType.Before, params Func<T, bool>[] predicates);
 
     /// <summary>
     ///     Attempts to advance the cursor in the specified direction.
@@ -89,7 +107,7 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
 
     public T? Previous {
         get => Next is null ? Elements[^1] : Elements[Index - 1];
-        set => Goto(value, CursorMoveType.After);
+        set => Goto(value, MoveType.After);
     }
 
     public T? Next {
@@ -102,9 +120,23 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
         set => this.GotoIndex(value);
     }
 
-    private T? next;
+    public SearchTarget SearchTarget {
+        get => searchTarget;
 
-    public ICursor<T> Goto(T? element, CursorMoveType moveType = CursorMoveType.Before) {
+        set {
+            if ((value == SearchTarget.Next && Next is null) || (value == SearchTarget.Previous && Previous is null)) {
+                searchTarget = SearchTarget.None;
+                return;
+            }
+
+            searchTarget = value;
+        }
+    }
+
+    private T? next;
+    private SearchTarget searchTarget;
+
+    public ICursor<T> Goto(T? element, MoveType moveType = MoveType.Before, bool setTarget = false) {
         /* Understanding move logic:
          *   Before:
          *     Position the cursor *before* the given element, meaning we set
@@ -120,7 +152,7 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
          *     `element`.
          */
 
-        if (moveType == CursorMoveType.After) {
+        if (moveType == MoveType.After) {
             if (element is null) {
                 next = default;
             }
@@ -136,7 +168,52 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
             next = element;
         }
 
+        if (setTarget)
+            SearchTarget = moveType == MoveType.After ? SearchTarget.Previous : SearchTarget.Next;
+        else
+            SearchTarget = SearchTarget.None;
+
         return this;
+    }
+
+    public bool TryGotoNext(MoveType moveType = MoveType.Before, params Func<T, bool>[] predicates) {
+        var i = Index;
+        if (SearchTarget == SearchTarget.Next)
+            i++;
+
+        for (; i + predicates.Length <= Elements.Count; i++) {
+            for (var j = 0; j < predicates.Length; j++) {
+                if (!predicates[j](Elements[i + j]))
+                    goto next;
+            }
+
+            this.GotoIndex(moveType == MoveType.After ? i + predicates.Length - 1 : i, moveType, true);
+            return true;
+
+            next: ;
+        }
+
+        return false;
+    }
+
+    public bool TryGotoPrevious(MoveType moveType = MoveType.Before, params Func<T, bool>[] predicates) {
+        var i = Index - 1;
+        if (SearchTarget == SearchTarget.Previous)
+            i--;
+
+        for (; i >= 0; i--) {
+            for (var j = 0; j < predicates.Length; j++) {
+                if (!predicates[j](Elements[i - j]))
+                    goto next;
+            }
+
+            this.GotoIndex(moveType == MoveType.After ? i + predicates.Length - 1 : i, moveType, true);
+            return true;
+
+            next: ;
+        }
+
+        return false;
     }
 
     public bool TryAdvance(Direction direction) {
@@ -161,12 +238,16 @@ public static class CursorExtensions {
     /// <param name="cursor">The cursor.</param>
     /// <param name="index">The index of the target element.</param>
     /// <param name="moveType">How to move to it.</param>
+    /// <param name="setTarget">
+    ///     Whether to set the <see cref="SearchTarget"/> and skip the target
+    ///     element with the next search function.
+    /// </param>
     /// <returns>The <paramref name="cursor"/> for chaining.</returns>
-    public static ICursor<T> GotoIndex<T>(this ICursor<T> cursor, int index, CursorMoveType moveType = CursorMoveType.Before) {
+    public static ICursor<T> GotoIndex<T>(this ICursor<T> cursor, int index, MoveType moveType = MoveType.Before, bool setTarget = false) {
         if (index < 0)
             throw new InvalidOperationException("Cannot go to a negative index. This behavior differs from MonoMod's relative negative indexing; did you mean to use GotoRelative?");
 
-        return cursor.Goto(index == cursor.Elements.Count ? default : cursor.Elements[index], moveType);
+        return cursor.Goto(index == cursor.Elements.Count ? default : cursor.Elements[index], moveType, setTarget);
     }
 
     /// <summary>
@@ -174,9 +255,38 @@ public static class CursorExtensions {
     /// </summary>
     /// <param name="cursor">The cursor.</param>
     /// <param name="offset">The offset relative to the index.</param>
+    /// <param name="moveType">How to move to it.</param>
+    /// <param name="setTarget">
+    ///     Whether to set the <see cref="SearchTarget"/> and skip the target
+    ///     element with the next search function.
+    /// </param>
     /// <returns>The <paramref name="cursor"/> for chaining.</returns>
-    public static ICursor<T> GotoRelative<T>(this ICursor<T> cursor, int offset) {
-        return GotoIndex(cursor, cursor.Index + offset);
+    public static ICursor<T> GotoRelative<T>(this ICursor<T> cursor, int offset, MoveType moveType = MoveType.Before, bool setTarget = false) {
+        return GotoIndex(cursor, cursor.Index + offset, moveType, setTarget);
+    }
+
+    /// <summary>
+    ///     Search forward and moves the cursor to the next sequence of elements
+    ///     matching the corresponding predicates.
+    /// </summary>
+    /// <param name="cursor">The cursor.</param>
+    /// <param name="moveType">How to move it.</param>
+    /// <param name="predicates">The predicates to evaluate.</param>
+    public static void GotoNext<T>(this ICursor<T> cursor, MoveType moveType = MoveType.Before, params Func<T, bool>[] predicates) {
+        if (!cursor.TryGotoNext(moveType, predicates))
+            throw new InvalidOperationException("Cannot advance cursor given the predicates.");
+    }
+
+    /// <summary>
+    ///     Search backward and moves the cursor to the next sequence of
+    ///     elements matching the corresponding predicates.
+    /// </summary>
+    /// <param name="cursor">The cursor.</param>
+    /// <param name="moveType">How to move it.</param>
+    /// <param name="predicates">The predicates to evaluate.</param>
+    public static void GotoPrevious<T>(this ICursor<T> cursor, MoveType moveType = MoveType.Before, params Func<T, bool>[] predicates) {
+        if (!cursor.TryGotoPrevious(moveType, predicates))
+            throw new InvalidOperationException("Cannot advance cursor given the predicates.");
     }
 
     /// <summary>
