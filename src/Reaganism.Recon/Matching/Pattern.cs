@@ -1,47 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace Reaganism.Recon.Matching;
+﻿namespace Reaganism.Recon.Matching;
 
 /// <summary>
 ///     A pattern, which is an abstract object that may match against elements
 ///     provided by a <see cref="ICursor{T}"/>.
 /// </summary>
 public abstract class Pattern<T> {
-    private sealed class OptionalPattern(Pattern<T> pattern) : Pattern<T> {
-        public override int MinimumLength => 0;
-
-        public override bool Match(MatchContext<T> ctx) {
-            pattern.TryMatch(ctx);
-            return true;
-        }
-    }
-
-    private sealed class SequencePattern(IEnumerable<Pattern<T>> patterns) : Pattern<T> {
-        private readonly Pattern<T>[] patterns = patterns.ToArray();
-
-        public override int MinimumLength => patterns.Sum(x => x.MinimumLength);
-
-        public override bool Match(MatchContext<T> ctx) {
-            var thePatterns = ctx.Direction == Direction.Forward ? patterns : patterns.Reverse();
-            foreach (var pattern in thePatterns) {
-                if (!pattern.Match(ctx))
-                    return false;
-            }
-
-            return true;
-        }
-    }
-
-    private sealed class EitherPattern(Pattern<T> a, Pattern<T> b) : Pattern<T> {
-        public override int MinimumLength => Math.Min(a.MinimumLength, b.MinimumLength);
-
-        public override bool Match(MatchContext<T> ctx) {
-            return a.TryMatch(ctx) || b.Match(ctx);
-        }
-    }
-
     /// <summary>
     ///     The minimum possible length of elements required to produce a valid
     ///     match against this pattern.
