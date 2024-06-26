@@ -124,6 +124,7 @@ public class ElementWindow<T> : IElementWindow<T> where T : class, IDoublyLinked
     }
 
     public void Advance(Direction direction) {
-        throw new System.NotImplementedException();
+        if (!TryAdvance(direction))
+            throw new InvalidOperationException("Cannot advance the window in the specified direction.");
     }
 }
