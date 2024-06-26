@@ -26,4 +26,4 @@ public enum CursorMoveType {
 ///     Specialized search functionality should be provided through extension
 ///     methods.
 /// </remarks>
-public interface ICursor<T> where T : IDoublyLinkedElement { }
+public interface ICursor<T> where T : class, IDoublyLinkedElement<T> { }

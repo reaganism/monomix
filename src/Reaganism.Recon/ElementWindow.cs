@@ -17,7 +17,7 @@ namespace Reaganism.Recon;
 ///     in a pattern only cares about the [directional] next or [directional]
 ///     previous elements).
 /// </remarks>
-public interface IElementWindow<T> where T : IDoublyLinkedElement<T> {
+public interface IElementWindow<T> where T : class, IDoublyLinkedElement<T> {
     /// <summary>
     ///     The element previous to the <see cref="Current"/>.
     /// </summary>
@@ -54,7 +54,7 @@ public interface IElementWindow<T> where T : IDoublyLinkedElement<T> {
 ///     A simple implementation of <see cref="IElementWindow{T}"/>.
 /// </summary>
 /// <typeparam name="T">The element type.</typeparam>
-public class ElementWindow<T> : IElementWindow<T> where T : IDoublyLinkedElement<T> {
+public class ElementWindow<T> : IElementWindow<T> where T : class, IDoublyLinkedElement<T> {
     public T? Previous { get; private set; }
 
     private T? current;

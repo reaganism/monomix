@@ -4,7 +4,7 @@
 ///     An element that is part of a doubly-linked list.
 /// </summary>
 /// <typeparam name="T">The element type.</typeparam>
-public interface IDoublyLinkedElement<out T> where T : IDoublyLinkedElement<T> {
+public interface IDoublyLinkedElement<out T> where T : class, IDoublyLinkedElement<T> {
     /// <summary>
     ///     The element previous to this element.
     /// </summary>
