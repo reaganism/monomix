@@ -17,7 +17,7 @@ namespace Reaganism.Recon;
 ///     in a pattern only cares about the [directional] next or [directional]
 ///     previous elements).
 /// </remarks>
-public interface IElementWindow<T> where T : class, IDoublyLinkedElement<T> {
+public interface IElementWindow<T> {
     /// <summary>
     ///     The element previous to the <see cref="Current"/>.
     /// </summary>
@@ -63,9 +63,9 @@ public class ElementWindow<T> : IElementWindow<T> where T : class, IDoublyLinked
         get => current;
 
         set {
-            Previous = value is null ? default : value.Previous;
+            Previous = value?.Previous?.Value;
             current = value;
-            Next = value is null ? default : value.Next;
+            Next = value?.Next?.Value;
         }
     }
 

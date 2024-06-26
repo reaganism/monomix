@@ -26,4 +26,9 @@ public enum CursorMoveType {
 ///     Specialized search functionality should be provided through extension
 ///     methods.
 /// </remarks>
-public interface ICursor<T> where T : class, IDoublyLinkedElement<T> { }
+public interface ICursor<T> {
+    /// <summary>
+    ///     A window into the collection that the cursor is positioned within.
+    /// </summary>
+    IElementWindow<T> Window { get; }
+}

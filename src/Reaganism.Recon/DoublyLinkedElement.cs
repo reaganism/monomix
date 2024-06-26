@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 
 namespace Reaganism.Recon;
 
@@ -7,58 +6,56 @@ namespace Reaganism.Recon;
 ///     An element that is part of a doubly-linked list.
 /// </summary>
 /// <typeparam name="T">The element type.</typeparam>
-public interface IDoublyLinkedElement<T> where T : class, IDoublyLinkedElement<T> {
+public interface IDoublyLinkedElement<T> {
+    private sealed class StrongDoublyLinkedElement<TStrong> : IDoublyLinkedElement<TStrong> {
+        public IDoublyLinkedElement<TStrong>? Previous { get; set; }
+
+        public required TStrong? Value { get; set; }
+
+        public IDoublyLinkedElement<TStrong>? Next { get; set; }
+    }
+
     /// <summary>
     ///     The element previous to this element.
     /// </summary>
-    T? Previous { get; set; }
+    IDoublyLinkedElement<T>? Previous { get; set; }
+
+    /// <summary>
+    ///     The value of this element.
+    /// </summary>
+    T? Value { get; set; }
 
     /// <summary>
     ///     The element following this element.
     /// </summary>
-    T? Next { get; set; }
-}
-
-/// <summary>
-///     A <see cref="StrongBox{T}"/>-like implementation of
-///     <see cref="IDoublyLinkedElement{T}"/> that allows for simple automatic
-///     wrapping of any type (including value types).
-/// </summary>
-/// <typeparam name="T">The element to wrap.</typeparam>
-public sealed class StrongElement<T> : IDoublyLinkedElement<StrongElement<T>> {
-    public StrongElement<T>? Previous { get; set; }
-
-    public required T? Value { get; init; }
-
-    public StrongElement<T>? Next { get; set; }
+    IDoublyLinkedElement<T>? Next { get; set; }
 
     /// <summary>
-    ///     Creates a new <see cref="StrongElement{T}"/> from an enumerable.
+    ///     Creates a doubly-linked list from the specified enumerable.
     /// </summary>
-    /// <param name="enumerable">
-    ///     The collection to convert to a doubly-linked list.
-    /// </param>
+    /// <param name="enumerable">The enumerable to create the list from.</param>
     /// <returns>
     ///     The head of the doubly-linked list.
     /// </returns>
     /// <remarks>
-    ///     Produces a doubly-linked list in the form of the head element.
+    ///     The head gives access to the entire doubly-linked list produced from
+    ///     the enumerable.
     /// </remarks>
-    public static StrongElement<T>? FromEnumerable(IEnumerable<T> enumerable) {
-        StrongElement<T>? head = null;
-        StrongElement<T>? previous = null;
+    public static IDoublyLinkedElement<T>? FromEnumerable(IEnumerable<T> enumerable) {
+        IDoublyLinkedElement<T>? head = null;
+        IDoublyLinkedElement<T>? previous = null;
 
         foreach (var value in enumerable) {
-            var element = new StrongElement<T> { Value = value, };
+            var element = new StrongDoublyLinkedElement<T> {
+                Value = value,
+                Previous = previous,
+            };
 
-            head ??= element;
-
-            if (previous != null) {
+            if (previous is not null)
                 previous.Next = element;
-                element.Previous = previous;
-            }
 
             previous = element;
+            head ??= element;
         }
 
         return head;
