@@ -141,7 +141,7 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
             else {
                 var index = Elements.IndexOf(element);
                 if (index == -1)
-                    throw new System.ArgumentException("Element not found in collection.", nameof(element));
+                    throw new ArgumentException("Element not found in collection.", nameof(element));
 
                 next = index >= Elements.Count ? default : Elements[index + 1];
             }
@@ -161,11 +161,19 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
     }
 
     public bool TryAdvance(Direction direction) {
-        throw new System.NotImplementedException();
+        if (direction == Direction.Forward && Next is null)
+            return false;
+
+        if (direction == Direction.Backward && Previous is null)
+            return false;
+
+        this.GotoRelative(direction == Direction.Forward ? 1 : -1);
+        return true;
     }
 
     public void Advance(Direction direction) {
-        throw new System.NotImplementedException();
+        if (!TryAdvance(direction))
+            throw new InvalidOperationException("Cannot advance cursor in the specified direction.");
     }
 }
 
