@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using Reaganism.Recon.Matching;
 
 namespace Reaganism.Recon;
 
@@ -114,6 +115,53 @@ public interface ICursor<T> {
     ///     <see langword="false"/>.
     /// </returns>
     bool TryFindPrevious([NotNullWhen(returnValue: true)] out T[]? elements, params Func<T, bool>[] predicates);
+
+    /// <summary>
+    ///     Searches forward and moves the cursor to the next matching pattern.
+    /// </summary>
+    /// <param name="pattern">The pattern to attempt to match.</param>
+    /// <param name="moveType">How to move it.</param>
+    /// <returns>
+    ///     <see langword="true"/> if the cursor was successfully advanced;
+    ///     otherwise, <see langword="false"/>.
+    /// </returns>
+    bool TryGotoNextPattern(Pattern<T> pattern, MoveType moveType = MoveType.Before);
+
+    /// <summary>
+    ///     Searches backward and moves the cursor to the previous matching
+    ///     pattern.
+    /// </summary>
+    /// <param name="pattern">The pattern to attempt to match.</param>
+    /// <param name="moveType">How to move it.</param>
+    /// <returns>
+    ///     <see langword="true"/> if the cursor was successfully advanced;
+    ///     otherwise, <see langword="false"/>.
+    /// </returns>
+    bool TryGotoPreviousPattern(Pattern<T> pattern, MoveType moveType = MoveType.Before);
+
+    /// <summary>
+    ///     Finds the next occurrence of a matching pattern.
+    /// </summary>
+    /// <param name="pattern">The pattern to attempt to match.</param>
+    /// <param name="element">
+    ///     The found element at the start of the matched pattern.</param>
+    /// <returns>
+    ///     <see langword="true"/> if the pattern was found; otherwise,
+    ///     <see langword="false"/>.
+    /// </returns>
+    bool TryFindNextPattern(Pattern<T> pattern, [NotNullWhen(returnValue: true)] out T? element);
+
+    /// <summary>
+    ///     Finds the previous occurrence of a matching pattern.
+    /// </summary>
+    /// <param name="pattern">The pattern to attempt to match.</param>
+    /// <param name="element">
+    ///     The found element at the start of the matched pattern.</param>
+    /// <returns>
+    ///     <see langword="true"/> if the pattern was found; otherwise,
+    ///     <see langword="false"/>.
+    /// </returns>
+    bool TryFindPreviousPattern(Pattern<T> pattern, [NotNullWhen(returnValue: true)] out T? element);
 
     /// <summary>
     ///     Attempts to advance the cursor in the specified direction.
@@ -271,6 +319,77 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
         return true;
     }
 
+    public bool TryGotoNextPattern(Pattern<T> pattern, MoveType moveType = MoveType.Before) {
+        var orig = Next;
+        var i = Index;
+        if (SearchTarget == SearchTarget.Next)
+            i++;
+
+        var ctx = new MatchContext<T>(this, Direction.Forward);
+        for (; i + pattern.MinimumLength <= Elements.Count; i++) {
+            Next = Elements[i];
+            if (!Pattern.Match(ctx, pattern))
+                continue;
+
+            // Cursor is mutated in Match.
+            return true;
+        }
+
+        Goto(orig);
+        return false;
+    }
+
+    public bool TryGotoPreviousPattern(Pattern<T> pattern, MoveType moveType = MoveType.Before) {
+        var orig = Next;
+        var i = Index - 1;
+        if (SearchTarget == SearchTarget.Previous)
+            i--;
+
+        i = Math.Min(i, Elements.Count - pattern.MinimumLength);
+
+        var ctx = new MatchContext<T>(this, Direction.Backward);
+        for (; i >= 0; i--) {
+            Next = Elements[i];
+            if (!Pattern.Match(ctx, pattern))
+                continue;
+
+            // Cursor is mutated in Match.
+            return true;
+        }
+
+        Goto(orig);
+        return false;
+    }
+
+    public bool TryFindNextPattern(Pattern<T> pattern, [NotNullWhen(true)] out T? element) {
+        var orig = Next;
+
+        if (!TryGotoNextPattern(pattern)) {
+            element = default;
+            Goto(orig);
+            return false;
+        }
+
+        // TODO: I mean... it *can* be null, right? But ehh.....
+        element = Next!;
+        Goto(orig);
+        return true;
+    }
+
+    public bool TryFindPreviousPattern(Pattern<T> pattern, [NotNullWhen(true)] out T? element) {
+        var orig = Next;
+
+        if (!TryGotoPreviousPattern(pattern)) {
+            element = default;
+            Goto(orig);
+            return false;
+        }
+
+        element = Next!;
+        Goto(orig);
+        return true;
+    }
+
     public bool TryAdvance(Direction direction) {
         if (direction == Direction.Forward && Next is null)
             return false;
@@ -370,6 +489,69 @@ public static class CursorExtensions {
     public static void FindPrevious<T>(this ICursor<T> cursor, out T[]? elements, params Func<T, bool>[] predicates) {
         if (!cursor.TryFindPrevious(out elements!, predicates))
             throw new InvalidOperationException("Cannot find the specified elements.");
+    }
+
+    /// <summary>
+    ///     Searches forward and moves the cursor to the next matching pattern.
+    /// </summary>
+    /// <param name="cursor">The cursor.</param>
+    /// <param name="pattern">The pattern to attempt to match.</param>
+    /// <param name="moveType">How to move it.</param>
+    /// <returns>
+    ///     <see langword="true"/> if the cursor was successfully advanced;
+    ///     otherwise, <see langword="false"/>.
+    /// </returns>
+    public static void GotoNextPattern<T>(this ICursor<T> cursor, Pattern<T> pattern, MoveType moveType = MoveType.Before) {
+        if (!cursor.TryGotoNextPattern(pattern, moveType))
+            throw new InvalidOperationException("Cannot advance cursor given the pattern.");
+    }
+
+    /// <summary>
+    ///     Searches backward and moves the cursor to the previous matching
+    ///     pattern.
+    /// </summary>
+    /// <param name="cursor">The cursor.</param>
+    /// <param name="pattern">The pattern to attempt to match.</param>
+    /// <param name="moveType">How to move it.</param>
+    /// <returns>
+    ///     <see langword="true"/> if the cursor was successfully advanced;
+    ///     otherwise, <see langword="false"/>.
+    /// </returns>
+    public static void GotoPreviousPattern<T>(this ICursor<T> cursor, Pattern<T> pattern, MoveType moveType = MoveType.Before) {
+        if (!cursor.TryGotoPreviousPattern(pattern, moveType))
+            throw new InvalidOperationException("Cannot advance cursor given the pattern.");
+    }
+
+    /// <summary>
+    ///     Finds the next occurrence of a matching pattern.
+    /// </summary>
+    /// <param name="cursor">The cursor.</param>
+    /// <param name="pattern">The pattern to attempt to match.</param>
+    /// <param name="element">
+    ///     The found element at the start of the matched pattern.</param>
+    /// <returns>
+    ///     <see langword="true"/> if the pattern was found; otherwise,
+    ///     <see langword="false"/>.
+    /// </returns>
+    public static void FindNextPattern<T>(this ICursor<T> cursor, Pattern<T> pattern, [NotNullWhen(returnValue: true)] out T? element) {
+        if (!cursor.TryFindNextPattern(pattern, out element))
+            throw new InvalidOperationException("Cannot find the specified pattern.");
+    }
+
+    /// <summary>
+    ///     Finds the previous occurrence of a matching pattern.
+    /// </summary>
+    /// <param name="cursor">The cursor.</param>
+    /// <param name="pattern">The pattern to attempt to match.</param>
+    /// <param name="element">
+    ///     The found element at the start of the matched pattern.</param>
+    /// <returns>
+    ///     <see langword="true"/> if the pattern was found; otherwise,
+    ///     <see langword="false"/>.
+    /// </returns>
+    public static void FindPreviousPattern<T>(this ICursor<T> cursor, Pattern<T> pattern, [NotNullWhen(returnValue: true)] out T? element) {
+        if (!cursor.TryFindPreviousPattern(pattern, out element))
+            throw new InvalidOperationException("Cannot find the specified pattern.");
     }
 
     /// <summary>
