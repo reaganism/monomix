@@ -120,48 +120,52 @@ public interface ICursor<T> {
     ///     Searches forward and moves the cursor to the next matching pattern.
     /// </summary>
     /// <param name="pattern">The pattern to attempt to match.</param>
+    /// <param name="ctx">The match context.</param>
     /// <param name="moveType">How to move it.</param>
     /// <returns>
     ///     <see langword="true"/> if the cursor was successfully advanced;
     ///     otherwise, <see langword="false"/>.
     /// </returns>
-    bool TryGotoNextPattern(Pattern<T> pattern, MoveType moveType = MoveType.Before);
+    bool TryGotoNextPattern(Pattern<T> pattern, out MatchContext<T> ctx, MoveType moveType = MoveType.Before);
 
     /// <summary>
     ///     Searches backward and moves the cursor to the previous matching
     ///     pattern.
     /// </summary>
     /// <param name="pattern">The pattern to attempt to match.</param>
+    /// <param name="ctx">The match context.</param>
     /// <param name="moveType">How to move it.</param>
     /// <returns>
     ///     <see langword="true"/> if the cursor was successfully advanced;
     ///     otherwise, <see langword="false"/>.
     /// </returns>
-    bool TryGotoPreviousPattern(Pattern<T> pattern, MoveType moveType = MoveType.Before);
+    bool TryGotoPreviousPattern(Pattern<T> pattern, out MatchContext<T> ctx, MoveType moveType = MoveType.Before);
 
     /// <summary>
     ///     Finds the next occurrence of a matching pattern.
     /// </summary>
     /// <param name="pattern">The pattern to attempt to match.</param>
+    /// <param name="ctx">The match context.</param>
     /// <param name="element">
     ///     The found element at the start of the matched pattern.</param>
     /// <returns>
     ///     <see langword="true"/> if the pattern was found; otherwise,
     ///     <see langword="false"/>.
     /// </returns>
-    bool TryFindNextPattern(Pattern<T> pattern, [NotNullWhen(returnValue: true)] out T? element);
+    bool TryFindNextPattern(Pattern<T> pattern, out MatchContext<T> ctx, [NotNullWhen(returnValue: true)] out T? element);
 
     /// <summary>
     ///     Finds the previous occurrence of a matching pattern.
     /// </summary>
     /// <param name="pattern">The pattern to attempt to match.</param>
+    /// <param name="ctx">The match context.</param>
     /// <param name="element">
     ///     The found element at the start of the matched pattern.</param>
     /// <returns>
     ///     <see langword="true"/> if the pattern was found; otherwise,
     ///     <see langword="false"/>.
     /// </returns>
-    bool TryFindPreviousPattern(Pattern<T> pattern, [NotNullWhen(returnValue: true)] out T? element);
+    bool TryFindPreviousPattern(Pattern<T> pattern, out MatchContext<T> ctx, [NotNullWhen(returnValue: true)] out T? element);
 
     /// <summary>
     ///     Attempts to advance the cursor in the specified direction.
@@ -319,13 +323,13 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
         return true;
     }
 
-    public bool TryGotoNextPattern(Pattern<T> pattern, MoveType moveType = MoveType.Before) {
+    public bool TryGotoNextPattern(Pattern<T> pattern, out MatchContext<T> ctx, MoveType moveType = MoveType.Before) {
         var orig = Next;
         var i = Index;
         if (SearchTarget == SearchTarget.Next)
             i++;
 
-        var ctx = new MatchContext<T>(this, Direction.Forward);
+        ctx = new MatchContext<T>(this, Direction.Forward);
         for (; i + pattern.MinimumLength <= Elements.Count; i++) {
             Next = Elements[i];
             if (!Pattern.Match(ctx, pattern))
@@ -339,7 +343,7 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
         return false;
     }
 
-    public bool TryGotoPreviousPattern(Pattern<T> pattern, MoveType moveType = MoveType.Before) {
+    public bool TryGotoPreviousPattern(Pattern<T> pattern, out MatchContext<T> ctx, MoveType moveType = MoveType.Before) {
         var orig = Next;
         var i = Index - 1;
         if (SearchTarget == SearchTarget.Previous)
@@ -347,7 +351,7 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
 
         i = Math.Min(i, Elements.Count - pattern.MinimumLength);
 
-        var ctx = new MatchContext<T>(this, Direction.Backward);
+        ctx = new MatchContext<T>(this, Direction.Backward);
         for (; i >= 0; i--) {
             Next = Elements[i];
             if (!Pattern.Match(ctx, pattern))
@@ -361,10 +365,10 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
         return false;
     }
 
-    public bool TryFindNextPattern(Pattern<T> pattern, [NotNullWhen(true)] out T? element) {
+    public bool TryFindNextPattern(Pattern<T> pattern, out MatchContext<T> ctx, [NotNullWhen(true)] out T? element) {
         var orig = Next;
 
-        if (!TryGotoNextPattern(pattern)) {
+        if (!TryGotoNextPattern(pattern, out ctx)) {
             element = default;
             Goto(orig);
             return false;
@@ -376,10 +380,10 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
         return true;
     }
 
-    public bool TryFindPreviousPattern(Pattern<T> pattern, [NotNullWhen(true)] out T? element) {
+    public bool TryFindPreviousPattern(Pattern<T> pattern, out MatchContext<T> ctx, [NotNullWhen(true)] out T? element) {
         var orig = Next;
 
-        if (!TryGotoPreviousPattern(pattern)) {
+        if (!TryGotoPreviousPattern(pattern, out ctx)) {
             element = default;
             Goto(orig);
             return false;
@@ -496,13 +500,14 @@ public static class CursorExtensions {
     /// </summary>
     /// <param name="cursor">The cursor.</param>
     /// <param name="pattern">The pattern to attempt to match.</param>
+    /// <param name="ctx">The match context.</param>
     /// <param name="moveType">How to move it.</param>
     /// <returns>
     ///     <see langword="true"/> if the cursor was successfully advanced;
     ///     otherwise, <see langword="false"/>.
     /// </returns>
-    public static void GotoNextPattern<T>(this ICursor<T> cursor, Pattern<T> pattern, MoveType moveType = MoveType.Before) {
-        if (!cursor.TryGotoNextPattern(pattern, moveType))
+    public static void GotoNextPattern<T>(this ICursor<T> cursor, Pattern<T> pattern, out MatchContext<T> ctx, MoveType moveType = MoveType.Before) {
+        if (!cursor.TryGotoNextPattern(pattern, out ctx, moveType))
             throw new InvalidOperationException("Cannot advance cursor given the pattern.");
     }
 
@@ -512,13 +517,14 @@ public static class CursorExtensions {
     /// </summary>
     /// <param name="cursor">The cursor.</param>
     /// <param name="pattern">The pattern to attempt to match.</param>
+    /// <param name="ctx">The match context.</param>
     /// <param name="moveType">How to move it.</param>
     /// <returns>
     ///     <see langword="true"/> if the cursor was successfully advanced;
     ///     otherwise, <see langword="false"/>.
     /// </returns>
-    public static void GotoPreviousPattern<T>(this ICursor<T> cursor, Pattern<T> pattern, MoveType moveType = MoveType.Before) {
-        if (!cursor.TryGotoPreviousPattern(pattern, moveType))
+    public static void GotoPreviousPattern<T>(this ICursor<T> cursor, Pattern<T> pattern, out MatchContext<T> ctx, MoveType moveType = MoveType.Before) {
+        if (!cursor.TryGotoPreviousPattern(pattern, out ctx, moveType))
             throw new InvalidOperationException("Cannot advance cursor given the pattern.");
     }
 
@@ -527,14 +533,15 @@ public static class CursorExtensions {
     /// </summary>
     /// <param name="cursor">The cursor.</param>
     /// <param name="pattern">The pattern to attempt to match.</param>
+    /// <param name="ctx">The match context.</param>
     /// <param name="element">
     ///     The found element at the start of the matched pattern.</param>
     /// <returns>
     ///     <see langword="true"/> if the pattern was found; otherwise,
     ///     <see langword="false"/>.
     /// </returns>
-    public static void FindNextPattern<T>(this ICursor<T> cursor, Pattern<T> pattern, [NotNullWhen(returnValue: true)] out T? element) {
-        if (!cursor.TryFindNextPattern(pattern, out element))
+    public static void FindNextPattern<T>(this ICursor<T> cursor, Pattern<T> pattern, out MatchContext<T> ctx, [NotNullWhen(returnValue: true)] out T? element) {
+        if (!cursor.TryFindNextPattern(pattern, out ctx, out element))
             throw new InvalidOperationException("Cannot find the specified pattern.");
     }
 
@@ -543,14 +550,15 @@ public static class CursorExtensions {
     /// </summary>
     /// <param name="cursor">The cursor.</param>
     /// <param name="pattern">The pattern to attempt to match.</param>
+    /// <param name="ctx">The match context.</param>
     /// <param name="element">
     ///     The found element at the start of the matched pattern.</param>
     /// <returns>
     ///     <see langword="true"/> if the pattern was found; otherwise,
     ///     <see langword="false"/>.
     /// </returns>
-    public static void FindPreviousPattern<T>(this ICursor<T> cursor, Pattern<T> pattern, [NotNullWhen(returnValue: true)] out T? element) {
-        if (!cursor.TryFindPreviousPattern(pattern, out element))
+    public static void FindPreviousPattern<T>(this ICursor<T> cursor, Pattern<T> pattern, out MatchContext<T> ctx, [NotNullWhen(returnValue: true)] out T? element) {
+        if (!cursor.TryFindPreviousPattern(pattern, out ctx, out element))
             throw new InvalidOperationException("Cannot find the specified pattern.");
     }
 
