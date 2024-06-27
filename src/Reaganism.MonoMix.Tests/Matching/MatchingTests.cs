@@ -98,7 +98,7 @@ public static class MatchingTests {
             if (!pattern.Match(ctx))
                 return false;
 
-            var match = ctx.Cursor.Previous;
+            var match = ctx.Previous;
             if (match?.Operand is not FieldInfo fieldInfo)
                 throw new InvalidOperationException("Field instruction must have a field operand");
 
@@ -190,6 +190,7 @@ public static class MatchingTests {
 
         var c = new TemporaryILCursorForTesting(InstructionProvider.FromMethodBaseAsSystem(methodInfo).ToList());
 
+        // Match from start (forward).
         {
             if (!c.TryFindNextPattern(pattern, out var ctx, out _))
                 return null;
@@ -198,6 +199,8 @@ public static class MatchingTests {
                 return null;
         }
 
+        // Match from end (backward).
+        c.Next = null;
         {
             if (!c.TryFindPreviousPattern(pattern, out var ctx, out _))
                 return null;
@@ -206,8 +209,11 @@ public static class MatchingTests {
                 return null;
         }
 
+        // Match from start (again).
+        c.Index = 0;
         {
-            if (!c.TryFindNextPattern(pattern, out var ctx, out _))
+            // Allow Goto here.
+            if (!c.TryGotoNextPattern(pattern, out var ctx))
                 return null;
 
             if (!ctx.TryGetData(FieldILPattern.FIELD_KEY, out var fieldInfo) || fieldInfo is not FieldInfo theFieldInfo)

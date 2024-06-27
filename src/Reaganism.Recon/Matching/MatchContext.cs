@@ -17,6 +17,10 @@ public sealed class MatchContext<T>(ICursor<T> cursor, Direction direction) {
     /// </summary>
     public Direction Direction { get; } = direction;
 
+    public T? Previous => Direction == Direction.Forward ? Cursor.Previous : Cursor.Next;
+
+    public T? Next => Direction == Direction.Forward ? Cursor.Next : Cursor.Previous;
+
     private readonly Dictionary<object, object> data = [];
 
     /// <summary>

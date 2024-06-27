@@ -183,11 +183,11 @@ public interface ICursor<T> {
 ///     base for specialized cursor implementations.
 /// </summary>
 /// <typeparam name="T">The element type.</typeparam>
-public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
-    public IList<T> Elements { get; } = elements;
+public abstract class Cursor<T> : ICursor<T> {
+    public IList<T> Elements { get; }
 
     public T? Previous {
-        get => Next is null ? Elements[^1] : Elements[Index - 1];
+        get => Index == 0 ? default : Next is null ? Elements[^1] : Elements[Index - 1];
         set => Goto(value, MoveType.After);
     }
 
@@ -217,6 +217,16 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
     private T? next;
     private SearchTarget searchTarget;
 
+    /// <summary>
+    ///     An abstract implementation of <see cref="ICursor{T}"/> that provides a
+    ///     base for specialized cursor implementations.
+    /// </summary>
+    /// <typeparam name="T">The element type.</typeparam>
+    protected Cursor(IList<T> elements) {
+        Elements = elements;
+        Index = 0;
+    }
+
     public ICursor<T> Goto(T? element, MoveType moveType = MoveType.Before, bool setTarget = false) {
         /* Understanding move logic:
          *   Before:
@@ -242,7 +252,7 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
                 if (index == -1)
                     throw new ArgumentException("Element not found in collection.", nameof(element));
 
-                next = index >= Elements.Count ? default : Elements[index + 1];
+                next = index >= Elements.Count - 1 ? default : Elements[index + 1];
             }
         }
         else {
@@ -281,6 +291,8 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
         var i = Index - 1;
         if (SearchTarget == SearchTarget.Previous)
             i--;
+
+        i = Math.Min(i, Elements.Count - predicates.Length);
 
         for (; i >= 0; i--) {
             for (var j = 0; j < predicates.Length; j++) {
@@ -349,11 +361,11 @@ public abstract class Cursor<T>(IList<T> elements) : ICursor<T> {
         if (SearchTarget == SearchTarget.Previous)
             i--;
 
-        i = Math.Min(i, Elements.Count - pattern.MinimumLength);
+        // i = Math.Min(i, Elements.Count - pattern.MinimumLength);
 
         ctx = new MatchContext<T>(this, Direction.Backward);
         for (; i >= 0; i--) {
-            Next = Elements[i];
+            Previous = Elements[i];
             if (!Pattern.Match(ctx, pattern))
                 continue;
 

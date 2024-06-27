@@ -1,4 +1,5 @@
 ﻿using Mono.Cecil.Cil;
+using Reaganism.Recon;
 using Reaganism.Recon.Matching;
 using static Reaganism.Recon.Matching.PatternBuilder;
 
@@ -11,8 +12,9 @@ public static class PatternBuilderExtensions {
             public override int MinimumLength => 1;
 
             public override bool Match(MatchContext<Instruction> ctx) {
-                var success = ctx.Cursor.Next?.OpCode == opCode;
-                ctx.Advance();
+                var success = ctx.Next?.OpCode == opCode;
+                if (success)
+                    ctx.Advance();
                 return success;
             }
         }
@@ -28,6 +30,7 @@ public static class PatternBuilderExtensions {
     }
 
     public static PatternBuilder<Instruction> OpCode(this PatternBuilder<Instruction> builder, OpCode opCode) {
+        builder.AddPattern(new OpCodePatternBuilder(opCode).Build());
         return new OpCodePatternBuilder(opCode);
     }
     #endregion
